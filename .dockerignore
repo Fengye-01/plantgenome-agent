@@ -1,0 +1,70 @@
+# ============================================================
+# PlantGenome Agent - .dockerignore
+# ============================================================
+# 排除不需要进入 Docker 镜像的文件，减小镜像体积
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# 环境变量（包含 API Key，不要进入镜像）
+.env
+.env.local
+.env.*.local
+
+# 数据目录（运行时挂载，不需要打包进镜像）
+# 注意：data/pdfs/ 里的 PDF 如果需要预装，可以取消注释
+data/chroma/
+# data/pdfs/
+
+# 文档和截图（运行时挂载）
+docs/screenshots/
+docs/images/
+
+# 测试和脚本（运行时不需要）
+tests/
+scripts/
+*.pyc
+
+# 缓存
+.cache/
+.pytest_cache/
+.mypy_cache/
+.streamlit/
+
+# 日志
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.bak
+*.tmp.*

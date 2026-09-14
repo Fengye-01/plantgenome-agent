@@ -1,0 +1,134 @@
+# ============================================================
+# PlantGenome Agent - docker-compose.yml v2.0
+# ============================================================
+# 包含服务：
+#   - postgres: PostgreSQL 数据库
+#   - redis: Redis 缓存/任务队列
+#   - backend: FastAPI 后端
+#   - worker: ARQ 异步任务 Worker
+#   - frontend: Streamlit 前端
+#
+# 用法：
+#   docker compose build
+#   docker compose up -d
+#   前端: http://localhost:8501
+#   后端: http://localhost:8000/docs
+# ============================================================
+
+services:
+  # ─────────────────────────────────────────────────────────
+  # PostgreSQL 数据库
+  # ─────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: plantgenome-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: plantgenome
+      POSTGRES_PASSWORD: plantgenome
+      POSTGRES_DB: plantgenome
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plantgenome"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────────────────
+  # Redis
+  # ─────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: plantgenome-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────────────────
+  # FastAPI 后端
+  # ─────────────────────────────────────────────────────────
+  backend:
+    build: .
+    container_name: plantgenome-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://plantgenome:plantgenome@postgres:5432/plantgenome
+      - REDIS_URL=redis://redis:6379/0
+      - LLM_MODEL_ID=${LLM_MODEL_ID:-Qwen/Qwen2.5-7B-Instruct}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_BASE_URL=${LLM_BASE_URL:-https://api.siliconflow.cn/v1}
+      - SECRET_KEY=${SECRET_KEY:-plantgenome-agent-secret-key}
+      - HF_ENDPOINT=${HF_ENDPOINT:-https://hf-mirror.com}
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: python -m app.api.main
+
+  # ─────────────────────────────────────────────────────────
+  # ARQ Worker（异步任务处理）
+  # ─────────────────────────────────────────────────────────
+  worker:
+    build: .
+    container_name: plantgenome-worker
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://plantgenome:plantgenome@postgres:5432/plantgenome
+      - REDIS_URL=redis://redis:6379/0
+      - LLM_MODEL_ID=${LLM_MODEL_ID:-Qwen/Qwen2.5-7B-Instruct}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_BASE_URL=${LLM_BASE_URL:-https://api.siliconflow.cn/v1}
+      - HF_ENDPOINT=${HF_ENDPOINT:-https://hf-mirror.com}
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: arq app.worker.settings.WorkerSettings
+
+  # ─────────────────────────────────────────────────────────
+  # Streamlit 前端
+  # ─────────────────────────────────────────────────────────
+  frontend:
+    build: .
+    container_name: plantgenome-frontend
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - API_BASE_URL=http://backend:8000
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - backend
+    command: >
+      streamlit run frontend/app.py
+      --server.port 8501
+      --server.address 0.0.0.0
+      --server.headless true
+      --server.fileWatcherType none
+      --browser.gatherUsageStats false
+
+# ============================================================
+# 数据卷
+# ============================================================
+volumes:
+  postgres_data:
+  redis_data:
