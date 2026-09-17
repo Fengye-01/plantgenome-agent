@@ -141,7 +141,7 @@ docker compose up -d
 
 ```bash
 # 1. 克隆项目
-git clone <your-repo-url>
+git clone https://github.com/Fengye-01/plantgenome-agent.git
 cd plantgenome-agent
 
 # 2. 创建并激活虚拟环境
@@ -153,20 +153,42 @@ pip install -r requirements.txt
 
 # 4. 配置环境变量
 cp .env.example .env
-# 编辑 .env，填入你的 LLM API Key
+# 编辑 .env，填入你的 LLM API Key（LLM_API_KEY）
 
-# 5. 准备知识库（把 PDF 放入 data/pdfs/，然后批量入库）
+# 5. 初始化数据库（SQLite，零配置）
+python scripts/init_db.py
+# 默认账号: admin / admin123
+
+# 6. 准备知识库（可选，把 PDF 放入 data/pdfs/ 后批量入库）
 $env:HF_ENDPOINT = "https://hf-mirror.com"
 python scripts/ingest_all_pdfs.py
 
-# 6. 启动后端
+# 7. 启动后端
 python -m app.api.main
 # 后端运行在 http://localhost:8000
 
-# 7. 启动前端（另开一个终端）
-streamlit run frontend/app.py --server.port 8502 --server.fileWatcherType none
-# 前端运行在 http://localhost:8502
+# 8. 启动前端（另开一个终端）
+streamlit run frontend/app.py --server.port 8501 --server.fileWatcherType none
+# 前端运行在 http://localhost:8501
 ```
+
+> **数据库说明**：默认使用 SQLite（零配置，`data/plantgenome.db`），无需安装 PostgreSQL。如需切换到 PostgreSQL，修改 `.env` 中 `DATABASE_URL` 即可（模型已兼容 JSON 类型）。
+
+> **默认账号**：`admin` / `admin123`（登录后即可使用所有功能）
+
+### 💡 示例问题
+
+登录后可以直接尝试以下问题，展示不同能力：
+
+| 问题 | 展示能力 |
+|------|----------|
+| `PAML codeml 怎么设置分支模型？` | RAG 文献检索（混合检索）+ 来源引用 |
+| `帮我搜索一下植物 mTERF 基因家族的最新研究文献` | PubMed 全网搜索工具 |
+| `查一下 AT1G01010 这个基因` | NCBI 基因查询工具 |
+| `研究 mTERF 家族进化需要什么流程？` | 生信流程推荐工具 |
+| 粘贴一段 FASTA 序列问"统计一下这个序列" | FASTA 序列分析工具 |
+| `这个序列有多少 CpG 岛？` | CpG 岛识别工具 |
+| 左侧 PubMed 面板输入关键字下载文献 | PubMed 一键下载入库 RAG |
 
 ---
 
@@ -182,7 +204,7 @@ streamlit run frontend/app.py --server.port 8502 --server.fileWatcherType none
 | 纯计算工具响应 | <6s | FASTA 统计 / CpG 岛扫描（平均 4.5-6.1s） |
 | 平均响应时间 | 19.0s | 完整 Agent 链路，主要瓶颈在 LLM 推理 |
 
-> **HitRate@3 偏低说明**：40% 的统计值偏低，主要原因有三个：①部分用例存在 sources 传递 Bug（回答有引用但 sources 字段为空）；②评估脚本用文件名匹配太严格（实际 PDF 文件名是论文标题，不包含主题关键词）；③个别用例测试集标注有偏差。修复后预期可达 70%+。详细错误分析见 [docs/evaluation.md](docs/evaluation.md)。
+> **HitRate@3 说明**：初版评估 40% 的主要原因是 sources 传递 Bug 和评估脚本匹配逻辑过于严格。已修复：①answer_node 不再限制 intent 提取 sources；②评估脚本改为文件名+snippet+heading_path 三维度匹配；③回答 prompt 增加防重复指令。修复后 HitRate 预期提升至 70%+。详细错误分析见 [docs/evaluation.md](docs/evaluation.md)。
 
 > 详细评估报告见 [docs/evaluation.md](docs/evaluation.md)，评估方法见 [docs/evaluation_methods.md](docs/evaluation_methods.md)，原始数据见 [docs/evaluation_results.json](docs/evaluation_results.json)
 
