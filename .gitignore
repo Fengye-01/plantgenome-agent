@@ -35,3 +35,6 @@ _check_*.py
 
 # Docker (if added later)
 docker-compose.override.yml
+
+# 面试准备（本地保留，不上传）
+docs/interview_qa.md
