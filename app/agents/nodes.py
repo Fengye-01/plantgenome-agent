@@ -33,11 +33,27 @@ ROUTER_PROMPT = """你是一个专业的生物信息学任务路由分类器。
 根据用户的问题，判断属于以下哪类任务，并提取对应的工具参数。
 
 【任务类型】
-1. literature_search - 文献检索、方法查询、概念解释、生信工具用法、软件参数说明
-2. fasta_analysis - FASTA 序列统计分析（用户提供或粘贴了 FASTA 序列，要求统计）
-3. cpg_scan - CpG 岛识别扫描（用户提供 DNA 序列并要求找 CpG 岛）
-4. pipeline_suggest - 研究流程/分析方案推荐（用户问"怎么做XX分析""需要什么流程""用什么工具"）
-5. direct_answer - 闲聊、问候、感谢、或不需要调用工具的简单问题
+1. literature_search - 文献检索、方法查询、概念解释、生信工具用法、软件参数说明（检索用户已上传入库的文献）
+2. literature_discovery - PubMed 文献搜索、查找最新研究、了解某领域有哪些论文、搜索相关文献（搜索 PubMed 全网，返回标题/作者/摘要）
+3. gene_query - NCBI 基因信息查询、基因功能查询、Locus Tag 查询、基因位置查询（用户输入基因名或Locus Tag要求查询信息）
+4. fasta_analysis - FASTA 序列统计分析（用户提供或粘贴了 FASTA 序列，要求统计）
+5. cpg_scan - CpG 岛识别扫描（用户提供 DNA 序列并要求找 CpG 岛）
+6. pipeline_suggest - 研究流程/分析方案推荐（用户问"怎么做XX分析""需要什么流程""用什么工具"）
+7. direct_answer - 闲聊、问候、感谢、或不需要调用工具的简单问题
+
+【literature_search vs literature_discovery 的区别】
+- literature_search：用户问的是具体概念/方法/工具用法，答案应该在已上传的文献中找
+- literature_discovery：用户明确要求"搜索文献""找最新研究""有哪些相关论文"，需要去 PubMed 全网搜索
+- 不确定时优先用 literature_search
+
+【多工具链式调用说明】
+如果之前已经调用过工具（见下方"已调用工具历史"），请判断：
+- 如果已有工具结果已经足够回答用户问题，选择 direct_answer 结束
+- 如果还需要调用其他工具补充信息，选择对应的工具类型继续
+- 不要重复调用同一个工具
+
+【已调用工具历史】
+{tool_history_str}
 
 【输出要求】
 严格输出 JSON 格式，不要输出任何其他文字、解释或 markdown 代码块。
@@ -48,6 +64,8 @@ JSON 格式：
 
 【工具名映射】
 - literature_search → search_pdf_knowledge
+- literature_discovery → search_pubmed
+- gene_query → query_ncbi_gene
 - fasta_analysis → parse_fasta_stats
 - cpg_scan → scan_cpg_islands
 - pipeline_suggest → suggest_pipeline
@@ -55,6 +73,8 @@ JSON 格式：
 
 【tool_input 参数说明】
 - search_pdf_knowledge: {{"query": "检索关键词"}}
+- search_pubmed: {{"keyword": "搜索关键字"}}
+- query_ncbi_gene: {{"gene_name": "基因名或Locus Tag"}}
 - parse_fasta_stats: {{"fasta_text": "FASTA序列内容"}}
 - scan_cpg_islands: {{"sequence": "DNA序列"}}
 - suggest_pipeline: {{"research_goal": "研究目标描述"}}
@@ -66,10 +86,14 @@ JSON 格式：
 输出：{{"intent": "literature_search", "tool_name": "search_pdf_knowledge", "tool_input": {{"query": "PAML codeml 分支模型设置"}}}}
 
 示例2：
+用户问题：帮我搜索一下植物 mTERF 基因家族的最新研究文献
+输出：{{"intent": "literature_discovery", "tool_name": "search_pubmed", "tool_input": {{"keyword": "plant mTERF gene family"}}}}
+
+示例3：
 用户问题：研究 mTERF 家族进化需要什么流程？
 输出：{{"intent": "pipeline_suggest", "tool_name": "suggest_pipeline", "tool_input": {{"research_goal": "mTERF 家族进化研究"}}}}
 
-示例3：
+示例4：
 用户问题：你好
 输出：{{"intent": "direct_answer", "tool_name": null, "tool_input": {{}}}}
 
@@ -141,6 +165,10 @@ def _extract_intent_from_text(text: str) -> str:
     text_lower = text.lower()
 
     # 按优先级匹配
+    if any(kw in text_lower for kw in ['literature_discovery', 'pubmed', '搜索文献', '查找文献', '最新研究', '相关论文', '有哪些文献']):
+        return "literature_discovery"
+    if any(kw in text_lower for kw in ['gene_query', '基因查询', '基因信息', '基因功能', 'locus tag', '基因位置', '查一下基因']):
+        return "gene_query"
     if any(kw in text_lower for kw in ['literature_search', '文献', '检索', '方法查询', '概念解释']):
         return "literature_search"
     if any(kw in text_lower for kw in ['fasta_analysis', 'fasta', '序列统计']):
@@ -240,25 +268,39 @@ def router_node(state: AgentState) -> AgentState:
     """
     路由节点：用 LLM 做意图分类 + 工具参数提取。
 
-    这是 Agent 工作流的第一个节点，负责：
+    这是 Agent 工作流的第一个节点（也是多工具链式调用的循环节点），负责：
     1. 理解用户问题的意图
     2. 选择合适的工具
     3. 提取工具需要的输入参数
+    4. 多轮循环时，基于已调用工具历史决定是否继续
 
     Args:
         state: 当前 Agent 状态（必须包含 query）
 
     Returns:
-        部分更新的 AgentState（intent, tool_name, tool_input, execution_log）
+        部分更新的 AgentState（intent, tool_name, tool_input, iteration, execution_log）
         LangGraph 会自动把这些字段 merge 到原状态中
     """
     query = state["query"]
+    iteration = state.get("iteration", 0) + 1  # 每次 router 调用，迭代 +1
+
+    # 构建工具历史字符串（供多轮 router 判断是否需要继续调用）
+    tool_history = state.get("tool_history", [])
+    if tool_history:
+        history_parts = []
+        for i, h in enumerate(tool_history, 1):
+            tool = h.get("tool", "?")
+            status = h.get("status", "?")
+            history_parts.append(f"{i}. {tool} (状态: {status})")
+        tool_history_str = "\n".join(history_parts)
+    else:
+        tool_history_str = "（无，首次调用）"
 
     # 初始化 LLM（每次调用都创建新实例，避免状态污染）
     llm = HelloAgentsLLM()
 
     # 构建 prompt
-    prompt = ROUTER_PROMPT.format(query=query)
+    prompt = ROUTER_PROMPT.format(query=query, tool_history_str=tool_history_str)
 
     # 调用 LLM
     try:
@@ -273,12 +315,22 @@ def router_node(state: AgentState) -> AgentState:
     tool_name = parsed["tool_name"]
     tool_input = parsed["tool_input"]
 
+    # 防止重复调用同一个工具（多工具链式调用的保护机制）
+    if tool_history and tool_name:
+        called_tools = [h.get("tool") for h in tool_history]
+        if tool_name in called_tools and intent != INTENT_DIRECT_ANSWER:
+            # 已经调用过这个工具，强制 direct_answer 结束循环
+            intent = INTENT_DIRECT_ANSWER
+            tool_name = None
+            tool_input = {}
+
     # 记录执行日志
     log_entry = {
         "node": "router",
         "intent": intent,
         "tool_name": tool_name,
         "tool_input": tool_input,
+        "iteration": iteration,
         "raw_response": response[:500],  # 只保存前 500 字符，避免日志过大
     }
     state["execution_log"].append(log_entry)
@@ -288,6 +340,7 @@ def router_node(state: AgentState) -> AgentState:
         "intent": intent,
         "tool_name": tool_name,
         "tool_input": tool_input,
+        "iteration": iteration,
         "execution_log": state["execution_log"],
     }
 
@@ -443,6 +496,12 @@ def tool_node(state: AgentState) -> AgentState:
             "latency": latency,
             "status": "success",
         })
+        # 累积到 tool_history（供多工具链式调用时 router 判断）
+        state.setdefault("tool_history", []).append({
+            "tool": tool_name,
+            "status": "success",
+            "latency": latency,
+        })
     except Exception as e:
         latency = round(time.time() - start_time, 3)
         error_msg = str(e)
@@ -456,10 +515,20 @@ def tool_node(state: AgentState) -> AgentState:
             "latency": latency,
             "status": "failed",
         })
+        # 累积到 tool_history
+        state.setdefault("tool_history", []).append({
+            "tool": tool_name,
+            "status": "failed",
+            "error": error_msg,
+            "latency": latency,
+        })
 
     # 返回部分更新的状态
+    # tool_history 累积所有已调用工具的结果（供多工具链式调用时 router 判断）
+    # tool_result 保留最近一次的结果（供 answer_node 使用）
     return {
         "tool_result": state["tool_result"],
+        "tool_history": state.get("tool_history", []),
         "execution_log": state["execution_log"],
     }
 
@@ -477,6 +546,8 @@ ANSWER_PROMPT = """你是植物基因组学研究助手。根据工具执行结�
 4. 如果是直接回答（没有调用工具），基于你的知识简洁回答
 5. 回答专业、简洁、有结构，300-800字
 6. 不要编造检索结果中没有的信息
+7. 【严禁重复】绝对不要重复同一个词、短语或句子。不要出现"并，并，，并"这类重复。如果发现自己在重复，立即停止并换一种表述。
+8. 【语言流畅】使用通顺的中文，专业术语保留英文原文。不要堆砌关键词，不要逐字翻译。
 
 【用户问题】
 {query}
@@ -578,6 +649,46 @@ def _format_tool_result(tool_result: Any, intent: str) -> str:
             lines.append(f"\n注意事项: {notes}")
         return "\n".join(lines)
 
+    # PubMed 文献搜索结果
+    if intent == "literature_discovery" and isinstance(tool_result, dict):
+        articles = tool_result.get("articles", [])
+        if not articles:
+            return tool_result.get("message", "未搜索到相关文献")
+
+        lines = [f"PubMed 搜索到 {len(articles)} 篇相关文献：", ""]
+        for i, art in enumerate(articles[:5], 1):  # 最多显示 5 篇
+            lines.append(f"[{i}] {art.get('title', '?')}")
+            lines.append(f"    作者: {art.get('authors', '?')[:80]}")
+            lines.append(f"    期刊: {art.get('journal', '?')} ({art.get('year', '?')})")
+            lines.append(f"    PMID: {art.get('pmid', '?')} | 全文: {'有' if art.get('has_full_text') else '无'}")
+            abstract = art.get('abstract', '')
+            if abstract:
+                lines.append(f"    摘要: {abstract[:200]}...")
+            lines.append("")
+        lines.append("提示：如需下载全文并入库 RAG，请在左侧 PubMed 面板输入关键字。")
+        return "\n".join(lines)
+
+    # NCBI 基因查询结果
+    if intent == "gene_query" and isinstance(tool_result, dict):
+        genes = tool_result.get("genes", [])
+        if not genes:
+            return tool_result.get("message", "未查询到相关基因信息")
+
+        lines = [f"NCBI 查询到 {len(genes)} 个相关基因：", ""]
+        for i, g in enumerate(genes[:3], 1):  # 最多显示 3 个
+            lines.append(f"[{i}] {g.get('name', '?')} (Gene ID: {g.get('gene_id', '?')})")
+            lines.append(f"    物种: {g.get('organism', '?')}")
+            if g.get("description"):
+                lines.append(f"    描述: {g['description'][:100]}")
+            if g.get("chromosome_location"):
+                lines.append(f"    染色体位置: {g['chromosome_location']}")
+            if g.get("synonyms"):
+                lines.append(f"    别名: {', '.join(g['synonyms'][:5])}")
+            if g.get("summary"):
+                lines.append(f"    功能摘要: {g['summary'][:150]}...")
+            lines.append("")
+        return "\n".join(lines)
+
     # 默认：直接转字符串，截断
     result_str = str(tool_result)
     if len(result_str) > 2000:
@@ -636,9 +747,12 @@ def answer_node(state: AgentState) -> AgentState:
     tool_result = state.get("tool_result")
     sources = state.get("sources", []) or []
 
-    # 如果是 RAG 检索，从 tool_result 中提取 sources
-    if intent == "literature_search" and isinstance(tool_result, dict) and "sources" in tool_result:
-        sources = tool_result.get("sources", [])
+    # 从 tool_result 中提取 sources（只要工具返回了 sources 就提取，不限制 intent）
+    # 这样即使 router 分类有偏差，sources 也能正确传递到最终回答
+    if isinstance(tool_result, dict) and "sources" in tool_result:
+        extracted = tool_result.get("sources", [])
+        if extracted:
+            sources = extracted
 
     # 格式化工具结果和来源
     tool_result_str = _format_tool_result(tool_result, intent)

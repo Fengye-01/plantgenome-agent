@@ -15,6 +15,8 @@ from app.tools.search_pdf_knowledge import search_pdf_knowledge
 from app.tools.fasta_stats import parse_fasta_stats
 from app.tools.cpg_island import scan_cpg_islands
 from app.tools.pipeline_suggest import suggest_pipeline
+from app.tools.pubmed_search_tool import search_pubmed_tool
+from app.tools.ncbi_gene_query import query_ncbi_gene
 
 
 # 初始化工具执行器单例
@@ -51,6 +53,20 @@ tool_executor.registerTool(
     name="suggest_pipeline",
     description="分析流程推荐工具。当用户询问研究方案、分析流程、实验设计、需要什么工具时使用。输入参数：research_goal（研究目标描述字符串）。",
     func=suggest_pipeline,
+)
+
+# 工具 5：PubMed 文献搜索
+tool_executor.registerTool(
+    name="search_pubmed",
+    description="PubMed 文献搜索工具。当用户要求搜索最新研究、查找相关文献、了解某领域有哪些论文、或询问'最近有什么关于XX的研究'时使用。与 search_pdf_knowledge 的区别：本工具搜索 PubMed 全网文献（返回标题/作者/摘要/PMID），而 search_pdf_knowledge 只检索用户已上传入库的文献。输入参数：keyword（搜索关键字字符串），可选 max_results（返回数量，默认5）。",
+    func=search_pubmed_tool,
+)
+
+# 工具 6：NCBI 基因信息查询
+tool_executor.registerTool(
+    name="query_ncbi_gene",
+    description="NCBI 基因信息查询工具。当用户询问某个基因的信息、基因功能、基因位置、Locus Tag 对应的基因、或输入基因名/基因ID要求查询时使用。支持基因名（如 BRCA1）、Locus Tag（如 AT1G01010）、Gene ID 查询。输入参数：gene_name（基因名或Locus Tag字符串），可选 organism（物种限定，如 Arabidopsis thaliana）。",
+    func=query_ncbi_gene,
 )
 
 

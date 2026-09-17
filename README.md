@@ -9,10 +9,14 @@
 ## ✨ 核心功能
 
 - 📄 **PDF 文献自动解析与知识库构建** — PyMuPDF 双模式提取 + Markdown 智能分块（标题层次感知 + BGE-m3 Token 精确控制）+ Chroma 向量库
-- 🔍 **基于 RAG 的文献检索问答** — BGE-m3 语义检索 + Top-K 召回 + 回答带 sources 来源引用，有效抑制幻觉
-- 🤖 **LangGraph Agent 自动意图路由** — Router-Tool-Answer 三阶段状态机，5 类意图分类，自动选择并调用工具
-- 🧬 **4 个生信工具** — FASTA 序列统计、CpG 岛滑动窗口扫描、分析流程推荐、文献知识检索
-- 🖥️ **Streamlit 交互界面** — 聊天问答 + PDF 上传 + 工具结果结构化展示 + Agent 执行过程可视化
+- 🔍 **混合检索 RAG（BM25 + 向量 + RRF 融合）** — 语义向量召回 + BM25 关键词重排 + Reciprocal Rank Fusion 融合，兼顾语义理解和精确匹配，显著提升召回率
+- 🌐 **PubMed 一键检索下载入库** — 输入关键字，自动从 PubMed 搜索文献、下载全文 PDF（Europe PMC 直链）、无全文时用摘要生成 PDF，自动走 RAG 入库流水线
+- 🔎 **PubMed Agent 工具集成** — Agent 可自动调用 search_pubmed 工具搜索全网文献元数据，与已入库文献检索形成互补
+- 🧬 **NCBI 基因信息查询** — Agent 可自动调用 query_ncbi_gene 工具，通过 NCBI E-utilities 查询基因名/Locus Tag 对应的基因信息（功能、位置、物种、别名）
+- 🔄 **多工具链式调用（循环边）** — LangGraph 循环架构，tool 执行后回到 router，可连续调用多个工具（最多 3 次迭代），支持复杂任务的多步骤推理
+- 🤖 **LangGraph Agent 自动意图路由** — Router-Tool-Answer 循环状态机，7 类意图分类，自动选择并调用工具，防重复调用保护
+- 🧰 **6 个生信工具** — 文献知识检索、PubMed 搜索、NCBI 基因查询、FASTA 序列统计、CpG 岛扫描、分析流程推荐
+- 🖥️ **Streamlit 交互界面** — 聊天问答 + PDF 上传 + PubMed 检索面板 + 工具结果结构化展示 + Agent 执行过程可视化
 - ⚡ **大序列性能优化** — 纯计算工具（FASTA/CpG）前端直接调用，绕过 LLM，毫秒级响应，大序列不卡死
 
 ---
@@ -28,18 +32,24 @@ graph TB
     FastAPI --> Agent[🤖 LangGraph Agent]
     Agent --> Router[🧭 Router Node]
     Router -->|需要工具| Tool[🔧 Tool Node]
-    Router -->|直接回答| Answer[💬 Answer Node]
-    Tool --> Answer
+    Router -->|直接回答/达到上限| Answer[💬 Answer Node]
+    Tool -->|循环: 回到Router| Router
     Tool --> T1[📄 search_pdf_knowledge]
-    Tool --> T2[🧬 parse_fasta_stats]
-    Tool --> T3[🔬 scan_cpg_islands]
-    Tool --> T4[📋 suggest_pipeline]
-    T1 --> Chroma[(💾 Chroma 向量库)]
+    Tool --> T2[🔎 search_pubmed]
+    Tool --> T3[🧬 query_ncbi_gene]
+    Tool --> T4[🧬 parse_fasta_stats]
+    Tool --> T5[🔬 scan_cpg_islands]
+    Tool --> T6[📋 suggest_pipeline]
+    T1 --> Hybrid[🔀 混合检索 BM25+向量+RRF]
+    Hybrid --> Chroma[(💾 Chroma 向量库)]
+    T2 --> PubMed[🌐 NCBI PubMed]
+    T3 --> NCBI[🌐 NCBI Gene]
     Router --> LLM[☁️ Qwen2.5-7B]
     Answer --> LLM
-    T4 --> LLM
+    T6 --> LLM
     style Agent fill:#e1f5fe,stroke:#01579b
     style Chroma fill:#fff3e0,stroke:#e65100
+    style Hybrid fill:#f3e5f5,stroke:#7b1fa2
 ```
 
 ### PDF RAG 流水线
@@ -59,16 +69,18 @@ graph LR
     style Store fill:#fff3e0,stroke:#e65100
 ```
 
-### Agent 状态机
+### Agent 状态机（多工具链式调用）
 
 ```mermaid
 stateDiagram-v2
     [*] --> Router: 用户输入
-    Router --> Tool: 需要工具
-    Router --> Answer: 直接回答
-    Tool --> Answer: 工具结果
+    Router --> Tool: 需要工具 (iteration < 3)
+    Router --> Answer: 直接回答 / 达到最大迭代
+    Tool --> Router: 工具执行完成 (循环，可继续调用其他工具)
     Answer --> [*]: 最终回答
 ```
+
+> **多工具链式调用**：tool 执行后回到 router，可连续调用多个工具（最多 3 次迭代）。router 基于已调用工具历史判断是否需要继续，防止重复调用。当 router 返回 direct_answer 或达到最大迭代次数时，跳到 answer 结束。
 
 > 完整架构图（含详细说明）见 [docs/architecture.md](docs/architecture.md)
 
@@ -80,9 +92,13 @@ stateDiagram-v2
 |------|------|------|
 | 语言 | Python 3.12 | 主开发语言 |
 | 后端 | FastAPI + Uvicorn | REST API 服务 |
-| Agent | LangGraph 1.2 | 状态机 Agent 框架 |
-| RAG | Chroma + BGE-m3 | 向量数据库 + 中英文混合 embedding |
+| Agent | LangGraph 1.2 | 循环状态机 Agent 框架（支持多工具链式调用） |
+| RAG 向量检索 | Chroma + BGE-m3 | 向量数据库 + 中英文混合 embedding |
+| RAG 混合检索 | BM25 + RRF | 关键词检索 + Reciprocal Rank Fusion 融合排序 |
 | PDF 解析 | PyMuPDF | 文本 + Markdown 双模式提取 |
+| PDF 生成 | fpdf2 | PubMed 摘要兜底生成 PDF |
+| 文献检索 | NCBI E-utilities + Europe PMC | PubMed 搜索 + 全文 PDF 下载 |
+| 基因查询 | NCBI E-utilities Gene DB | 基因名/Locus Tag 信息查询 |
 | 前端 | Streamlit | Python 原生交互界面 |
 | LLM | 硅基流动 API | Qwen2.5-7B-Instruct（OpenAI 兼容格式） |
 | 测试 | pytest + 自定义脚本 | 单元测试 + 端到端测试 + 评估脚本 |
@@ -184,23 +200,27 @@ plantgenome-agent/
 │   │   ├── tools.py             # ToolExecutor 工具注册与调度
 │   │   └── config.py            # 配置管理
 │   ├── agents/
-│   │   ├── state.py             # AgentState 定义 + 5 类意图常量
-│   │   ├── nodes.py             # router_node / tool_node / answer_node
-│   │   ├── graph.py             # LangGraph 图构建 + run_agent
-│   │   └── tool_registry.py     # 4 个工具注册
+│   │   ├── state.py             # AgentState 定义 + 7 类意图常量 + 工具历史/迭代计数
+│   │   ├── nodes.py             # router_node / tool_node / answer_node（支持多轮循环）
+│   │   ├── graph.py             # LangGraph 循环图构建 + run_agent（多工具链式调用）
+│   │   └── tool_registry.py     # 6 个工具注册
 │   ├── rag/
 │   │   ├── pdf_parser.py        # PDF 解析（纯文本 + Markdown 双模式）
 │   │   ├── text_cleaner.py      # 文本清洗（两阶段，9 个噪声正则）
 │   │   ├── chunker.py           # Markdown 智能分块（4 大策略）
 │   │   ├── vector_store.py      # 向量存储（BGE-m3 + Chroma 持久化）
+│   │   ├── bm25_store.py        # BM25 索引 + RRF 融合 + hybrid_search（混合检索）
 │   │   ├── retriever.py         # 检索封装（Top-K + sources 组装）
 │   │   ├── context_builder.py   # 上下文工程（GSSC 流水线）
 │   │   └── rag_generator.py     # RAG 生成器（检索 + 上下文 + LLM）
 │   └── tools/
-│       ├── search_pdf_knowledge.py  # RAG 检索工具
+│       ├── search_pdf_knowledge.py  # RAG 混合检索工具（BM25+向量+RRF）
+│       ├── pubmed_search_tool.py    # PubMed 搜索工具（Agent 用，返回元数据）
+│       ├── ncbi_gene_query.py       # NCBI 基因信息查询工具
 │       ├── fasta_stats.py           # FASTA 统计工具
 │       ├── cpg_island.py            # CpG 岛扫描工具
-│       └── pipeline_suggest.py      # 流程推荐工具
+│       ├── pipeline_suggest.py      # 流程推荐工具
+│       └── pubmed_fetcher.py        # PubMed 检索下载模块（搜索+全文下载+摘要兜底）
 ├── frontend/
 │   └── app.py                 # Streamlit 前端（聊天 + 工具面板 + 执行过程可视化）
 ├── scripts/

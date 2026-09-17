@@ -40,9 +40,10 @@ class WorkerSettings:
     )
 
     # 任务函数列表（直接引用函数对象，ARQ 不支持 module:attr 字符串格式）
-    from app.worker.tasks import process_pdf_document
+    from app.worker.tasks import process_pdf_document, process_pubmed_search
     functions = [
         process_pdf_document,
+        process_pubmed_search,
     ]
 
     # Worker 配置

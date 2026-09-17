@@ -17,7 +17,9 @@ from typing import TypedDict, Optional, Any, List, Dict
 # 意图分类常量（5 类）
 # ═══════════════════════════════════════════════════════════════
 
-INTENT_LITERATURE_SEARCH = "literature_search"   # 文献/方法/概念问题
+INTENT_LITERATURE_SEARCH = "literature_search"   # 文献/方法/概念问题（检索已有知识库）
+INTENT_LITERATURE_DISCOVERY = "literature_discovery"  # PubMed 文献搜索（发现新文献）
+INTENT_GENE_QUERY = "gene_query"                   # NCBI 基因信息查询
 INTENT_FASTA_ANALYSIS = "fasta_analysis"         # FASTA 序列统计
 INTENT_CPG_SCAN = "cpg_scan"                     # CpG 岛识别
 INTENT_PIPELINE_SUGGEST = "pipeline_suggest"     # 研究流程规划
@@ -26,6 +28,8 @@ INTENT_DIRECT_ANSWER = "direct_answer"           # 闲聊/直接可答
 # 所有合法意图列表
 VALID_INTENTS = [
     INTENT_LITERATURE_SEARCH,
+    INTENT_LITERATURE_DISCOVERY,
+    INTENT_GENE_QUERY,
     INTENT_FASTA_ANALYSIS,
     INTENT_CPG_SCAN,
     INTENT_PIPELINE_SUGGEST,
@@ -35,6 +39,8 @@ VALID_INTENTS = [
 # 意图 → 工具名映射
 INTENT_TO_TOOL = {
     INTENT_LITERATURE_SEARCH: "search_pdf_knowledge",
+    INTENT_LITERATURE_DISCOVERY: "search_pubmed",
+    INTENT_GENE_QUERY: "query_ncbi_gene",
     INTENT_FASTA_ANALYSIS: "parse_fasta_stats",
     INTENT_CPG_SCAN: "scan_cpg_islands",
     INTENT_PIPELINE_SUGGEST: "suggest_pipeline",
@@ -57,10 +63,12 @@ class AgentState(TypedDict):
     - query: 用户原始问题
     - user_id: 当前登录用户 ID（来自 JWT 认证，不经过 LLM，用于向量库用户隔离）
     - messages: 对话历史（用于多轮对话）
-    - intent: 路由分类结果（5 类意图之一）
+    - intent: 路由分类结果（6 类意图之一）
     - tool_name: 选中的工具名（router_node 决定）
     - tool_input: 工具输入参数（router_node 提取）
-    - tool_result: 工具执行结果（tool_node 产出）
+    - tool_result: 工具执行结果（tool_node 产出，最近一次）
+    - tool_history: 工具调用历史（多工具链式调用时，记录所有已调用的工具和结果）
+    - iteration: 当前迭代次数（多工具链式调用的循环计数，达到上限后强制结束）
     - retrieved_context: RAG 检索结果（search_pdf_knowledge 工具产出）
     - final_answer: 最终回答（answer_node 产出）
     - sources: 来源引用（answer_node 产出）
@@ -72,7 +80,9 @@ class AgentState(TypedDict):
     intent: Optional[str]                          # 路由分类结果
     tool_name: Optional[str]                       # 选中的工具名
     tool_input: Optional[Dict[str, Any]]           # 工具输入参数
-    tool_result: Optional[Any]                     # 工具执行结果
+    tool_result: Optional[Any]                     # 工具执行结果（最近一次）
+    tool_history: List[Dict[str, Any]]             # 工具调用历史（多工具链式调用）
+    iteration: int                                 # 当前迭代次数
     retrieved_context: Optional[List[Dict]]        # RAG 检索结果
     final_answer: Optional[str]                    # 最终回答
     sources: Optional[List[str]]                   # 来源引用
@@ -108,6 +118,8 @@ def create_initial_state(
         "tool_name": None,
         "tool_input": None,
         "tool_result": None,
+        "tool_history": [],
+        "iteration": 0,
         "retrieved_context": None,
         "final_answer": None,
         "sources": None,

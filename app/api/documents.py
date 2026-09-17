@@ -17,7 +17,7 @@ from app.api.deps import get_current_user
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.models import Document, Task, User
-from app.schemas.document import DocumentResponse, DocumentUploadResponse
+from app.schemas.document import DocumentResponse, DocumentUploadResponse, PubMedSearchRequest, PubMedSearchResponse
 
 settings = get_settings()
 router = APIRouter(prefix="/api/documents", tags=["文档"])
@@ -201,3 +201,89 @@ def delete_document(
     db.commit()
 
     return None
+
+
+@router.post("/pubmed-search", response_model=PubMedSearchResponse, status_code=status.HTTP_202_ACCEPTED)
+async def pubmed_search(
+    request: PubMedSearchRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    按关键字从 PubMed 检索文献并自动下载入库（异步处理）。
+
+    流程：
+    1. 校验关键字和数量
+    2. 创建 Task 记录（status=pending, task_type=pubmed_search）
+    3. 提交异步任务到 ARQ 队列
+    4. 返回 task_id，前端轮询 GET /api/tasks/{task_id}
+
+    异步任务内部会：
+    - 调用 NCBI E-utilities 搜索 PMID
+    - 获取文献详情（标题/作者/摘要/PMC ID）
+    - 尝试 PMC 下载全文 PDF，失败则用摘要生成 PDF
+    - 逐篇复用现有 PDF 入库流水线（解析→分块→向量化）
+    """
+    # 校验
+    keyword = request.keyword.strip()
+    if not keyword:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="搜索关键字不能为空",
+        )
+    if not (1 <= request.max_results <= 20):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="max_results 必须在 1-20 之间",
+        )
+
+    # 创建 Task 记录
+    task = Task(
+        user_id=current_user.id,
+        task_type="pubmed_search",
+        status="pending",
+        progress=0,
+        params={
+            "keyword": keyword,
+            "max_results": request.max_results,
+        },
+    )
+    db.add(task)
+    db.commit()
+    db.refresh(task)
+
+    # 提交异步任务到 ARQ 队列
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(settings.redis_url)
+        redis_settings = RedisSettings(
+            host=parsed.hostname or "localhost",
+            port=parsed.port or 6379,
+            password=parsed.password,
+            database=int(parsed.path.lstrip("/")) if parsed.path else 0,
+        )
+        redis = await create_pool(redis_settings)
+        await redis.enqueue_job(
+            "process_pubmed_search",
+            keyword=keyword,
+            max_results=request.max_results,
+            user_id=current_user.id,
+            task_id=task.id,
+        )
+        await redis.close()
+    except Exception as e:
+        task.status = "failed"
+        task.error_message = f"ARQ 队列连接失败: {str(e)}"
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"任务队列不可用: {str(e)}",
+        )
+
+    return PubMedSearchResponse(
+        task_id=task.id,
+        keyword=keyword,
+        max_results=request.max_results,
+        status="pending",
+        message="PubMed 检索任务已提交，正在后台下载并入库",
+    )

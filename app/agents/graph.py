@@ -1,10 +1,15 @@
 """
 LangGraph 工作流构建（D11 任务 2：完整图 + 条件边）
 
-完整的 Agent 工作流：
-    START → router → [条件边] → tool → answer → END
+完整的 Agent 工作流（支持多工具链式调用）：
+    START → router → [条件边] → tool → router（循环，可继续调用其他工具）
                             ↓
-                          answer（direct_answer 直接回答，不调用工具）
+                          answer → END
+
+循环控制：
+- 最大迭代次数 MAX_ITERATIONS = 3（防止死循环）
+- 当 router 返回 direct_answer 或没有选中工具时，跳出循环到 answer
+- 达到最大迭代次数时，强制到 answer
 
 参考 Hello Agents 第 6 章 LangGraph：
 - StateGraph: 状态图
@@ -24,6 +29,10 @@ from app.agents.state import AgentState, create_initial_state, INTENT_DIRECT_ANS
 from app.agents.nodes import router_node, tool_node, answer_node
 
 
+# 最大工具调用迭代次数（多工具链式调用的循环上限，防止死循环）
+MAX_ITERATIONS = 3
+
+
 # ═══════════════════════════════════════════════════════════════
 # 条件边函数
 # ═══════════════════════════════════════════════════════════════
@@ -32,19 +41,25 @@ def should_call_tool(state: AgentState) -> str:
     """
     条件边：router 执行后，判断是否需要调用工具，还是直接回答。
 
-    判断逻辑：
+    判断逻辑（多工具链式调用版本）：
     - intent == direct_answer → 直接回答（不需要工具）
     - tool_name 为 None → 直接回答（没有选中工具）
-    - 其他情况 → 调用工具
+    - iteration >= MAX_ITERATIONS → 强制结束（防止死循环）
+    - 其他情况 → 调用工具（调用完后会回到 router，可继续调用其他工具）
 
     Args:
-        state: Agent 状态（含 intent、tool_name）
+        state: Agent 状态（含 intent、tool_name、iteration）
 
     Returns:
         "tool" 或 "answer"，对应条件边的 key
     """
     intent = state.get("intent")
     tool_name = state.get("tool_name")
+    iteration = state.get("iteration", 0)
+
+    # 达到最大迭代次数，强制结束（防止死循环）
+    if iteration >= MAX_ITERATIONS:
+        return "answer"
 
     # direct_answer 意图或没有选中工具 → 直接回答
     if intent == INTENT_DIRECT_ANSWER or tool_name is None:
@@ -60,16 +75,17 @@ def should_call_tool(state: AgentState) -> str:
 
 def build_graph():
     """
-    构建 PlantGenome Agent 的完整 LangGraph 工作流。
+    构建 PlantGenome Agent 的完整 LangGraph 工作流（支持多工具链式调用）。
 
     图结构：
         START → router → [条件边]
-                            ├─ tool → answer → END
+                            ├─ tool → router（循环，可继续调用其他工具）
                             └─ answer → END
 
     条件边逻辑：
     - intent == direct_answer 或 tool_name == None → 直接到 answer
-    - 其他情况 → 到 tool（调用工具后再到 answer）
+    - iteration >= MAX_ITERATIONS → 强制到 answer
+    - 其他情况 → 到 tool（调用完后回到 router）
 
     Returns:
         编译后的 LangGraph 应用
@@ -96,8 +112,9 @@ def build_graph():
         },
     )
 
-    # 普通边：tool → answer（工具执行完后生成回答）
-    workflow.add_edge("tool", "answer")
+    # 循环边：tool → router（工具执行完后回到路由节点，可继续调用其他工具）
+    # 这是多工具链式调用的核心：tool 执行完不直接到 answer，而是回到 router
+    workflow.add_edge("tool", "router")
 
     # 普通边：answer → END（回答生成后结束）
     workflow.add_edge("answer", END)
@@ -174,7 +191,7 @@ def run_agent(
 def print_graph_structure():
     """打印图结构（文字描述，不需要额外依赖）。"""
     print("=" * 60)
-    print("PlantGenome Agent 工作流图结构")
+    print("PlantGenome Agent 工作流图结构（支持多工具链式调用）")
     print("=" * 60)
     print("""
     ┌─────────┐
@@ -183,31 +200,32 @@ def print_graph_structure():
          │
          ▼
     ┌─────────┐
-    │ router  │  ← 意图分类 + 工具选择
+    │ router  │  ← 意图分类 + 工具选择（可循环多次）
     └────┬────┘
          │
     ┌────┴────┐  ← 条件边 (should_call_tool)
     │         │
     ▼         ▼
 ┌───────┐ ┌────────┐
-│ tool  │ │ answer │  ← direct_answer 直接回答
+│ tool  │ │ answer │  ← direct_answer / 达到最大迭代次数
 └───┬───┘ └───┬────┘
     │         │
     └────┬────┘
-         │
+         │ 循环边：tool → router（可继续调用其他工具）
          ▼
     ┌─────────┐
     │   END   │
     └─────────┘
     """)
     print("节点说明:")
-    print("  router: 用 LLM 做意图分类，选择工具和参数")
-    print("  tool:   执行选中的工具（RAG检索/FASTA统计/CpG扫描/流程推荐）")
+    print("  router: 用 LLM 做意图分类，选择工具和参数（多轮循环时基于工具历史判断）")
+    print("  tool:   执行选中的工具（RAG检索/FASTA统计/CpG扫描/流程推荐/PubMed搜索）")
     print("  answer: 基于工具结果生成最终回答")
     print()
-    print("条件边说明:")
-    print("  intent == direct_answer 或 tool_name == None → 直接到 answer")
-    print("  其他情况 → 到 tool（调用工具后再到 answer）")
+    print("循环说明:")
+    print("  tool 执行完后回到 router，可继续调用其他工具（多工具链式调用）")
+    print(f"  最大迭代次数: {MAX_ITERATIONS}（防止死循环）")
+    print("  当 router 返回 direct_answer 或达到最大迭代次数时，跳到 answer 结束")
     print("=" * 60)
 
 

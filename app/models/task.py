@@ -9,8 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -41,11 +40,11 @@ class Task(Base):
     # 进度（0-100）
     progress: Mapped[int] = mapped_column(Integer, default=0)
 
-    # 任务输入参数（JSONB）
-    params: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    # 任务输入参数（JSON，兼容 SQLite 和 PostgreSQL）
+    params: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
-    # 任务结果（JSONB）
-    result: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    # 任务结果（JSON）
+    result: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # 错误信息
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

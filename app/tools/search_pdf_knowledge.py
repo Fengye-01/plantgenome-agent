@@ -11,23 +11,31 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from app.rag.vector_store import VectorStore
+from app.rag.bm25_store import hybrid_search
 
 
 def search_pdf_knowledge(
     query: str,
     top_k: int = 3,
     user_id: Optional[int] = None,
+    enable_hybrid: bool = True,
 ) -> Dict:
     """
     检索 PDF 文献知识库，返回相关片段 + sources。
 
     这是 Agent 的核心工具之一，用于回答文献、方法、概念、生信工具用法等问题。
 
+    检索策略：
+    - 混合检索（默认开启）：向量检索召回 top_k*5 候选 → BM25 关键词重排 → RRF 融合
+    - 向量检索擅长语义匹配，BM25 擅长专业术语精确匹配，融合后兼顾两者
+    - 可通过 enable_hybrid=False 回退到纯向量检索
+
     Args:
         query: 检索关键词或问题
         top_k: 返回最相关的 top_k 个文档块，默认 3
         user_id: 当前登录用户 ID，用于用户级数据隔离——只检索该用户上传的文档；
                  None 时不过滤（独立脚本/测试场景）
+        enable_hybrid: 是否启用混合检索（BM25 + 向量 + RRF），默认 True
 
     Returns:
         dict，包含：
@@ -35,6 +43,7 @@ def search_pdf_knowledge(
         - sources: list[dict]，来源列表，每个包含 filename、page、snippet、heading_path
         - count: int，检索到的文档块数量
         - has_result: bool，是否检索到结果
+        - retrieval_mode: str，检索模式（"hybrid" 或 "vector_only"）
 
     失败情况：
         - 向量库加载失败
@@ -46,22 +55,33 @@ def search_pdf_knowledge(
     # 用户级数据隔离：只检索当前用户的文档（user_id 来自 JWT 认证，非 LLM 输出）
     filter_metadata = {"user_id": user_id} if user_id is not None else None
 
-    # 执行检索
-    results = vs.search(query, top_k=top_k, filter_metadata=filter_metadata)
+    # 向量检索：混合检索时召回更多候选（top_k * 5），供 BM25 重排
+    recall_k = top_k * 5 if enable_hybrid else top_k
+    raw_results = vs.search(query, top_k=recall_k, filter_metadata=filter_metadata)
 
-    if not results:
+    retrieval_mode = "vector_only"
+
+    if enable_hybrid and len(raw_results) > top_k:
+        # 混合检索：BM25 + 向量 + RRF 融合
+        fused_results = hybrid_search(query, raw_results, top_k=top_k)
+        if fused_results:
+            raw_results = fused_results
+            retrieval_mode = "hybrid"
+
+    if not raw_results:
         return {
             "context": "",
             "sources": [],
             "count": 0,
             "has_result": False,
+            "retrieval_mode": retrieval_mode,
         }
 
     # 格式化检索结果
     context_parts = []
     sources = []
 
-    for i, r in enumerate(results):
+    for i, r in enumerate(raw_results):
         # 检索结果正文字段：vector_store 返回 "text"（兼容历史命名 "content"）
         content = r.get("text") or r.get("content", "")
         metadata = r.get("metadata", {})
@@ -97,8 +117,9 @@ def search_pdf_knowledge(
     return {
         "context": "\n\n".join(context_parts),
         "sources": sources,
-        "count": len(results),
+        "count": len(raw_results),
         "has_result": True,
+        "retrieval_mode": retrieval_mode,
     }
 
 

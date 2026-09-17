@@ -9,8 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import DateTime, ForeignKey, JSON, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -65,13 +64,13 @@ class Message(Base):
 
     存储每条消息的内容和元数据。
     - role: user / assistant
-    - sources: 文献来源引用（JSONB，PostgreSQL 原生 JSON 类型，支持查询）
+    - sources: 文献来源引用（JSON，兼容 SQLite 和 PostgreSQL）
     - tool_name: 调用的工具名
-    - tool_result: 工具执行结果（JSONB）
+    - tool_result: 工具执行结果（JSON）
 
-    为什么用 JSONB？
-    - PostgreSQL 原生支持，存储和查询效率高
-    - 可以直接在 SQL 中查询 JSON 字段
+    为什么用 JSON？
+    - SQLAlchemy 通用 JSON 类型，兼容 SQLite 和 PostgreSQL
+    - 可以存储结构化数据（字典、列表）
     - 比 Text 存储 JSON 更专业
     """
     __tablename__ = "messages"
@@ -82,15 +81,15 @@ class Message(Base):
     role: Mapped[str] = mapped_column(String(20), nullable=False, index=True)  # user / assistant
     content: Mapped[str] = mapped_column(Text, nullable=False)
 
-    # 文献来源引用（JSONB 数组）
-    sources: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
+    # 文献来源引用（JSON 数组）
+    sources: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
     # 工具调用信息
     tool_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    tool_result: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    tool_result: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
-    # Agent 执行日志（JSONB，用于前端展示执行过程）
-    execution_log: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
+    # Agent 执行日志（JSON，用于前端展示执行过程）
+    execution_log: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

@@ -26,3 +26,12 @@ screenshot*.png
 # OS files
 .DS_Store
 Thumbs.db
+
+# Backup and temp files
+*.bak
+*.tmp
+_test_*.py
+_check_*.py
+
+# Docker (if added later)
+docker-compose.override.yml

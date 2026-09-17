@@ -27,7 +27,7 @@ import streamlit as st
 import pandas as pd
 
 # API 基础地址
-API_BASE_URL = "http://localhost:8000"
+API_BASE_URL = "http://localhost:8001"
 
 # ═══════════════════════════════════════════════════════════
 # 页面配置
@@ -170,6 +170,21 @@ def api_get_task(task_id: int):
         if resp.status_code == 200:
             return resp.json(), None
         return None, resp.json().get("detail", "查询失败")
+    except Exception as e:
+        return None, f"连接服务器失败: {str(e)}"
+
+
+def api_pubmed_search(keyword: str, max_results: int = 5):
+    """从 PubMed 检索文献并自动下载入库（异步）。"""
+    try:
+        resp = requests.post(
+            f"{API_BASE_URL}/api/documents/pubmed-search",
+            json={"keyword": keyword, "max_results": max_results},
+            headers=get_headers(),
+        )
+        if resp.status_code in (200, 202):
+            return resp.json(), None
+        return None, resp.json().get("detail", "检索失败")
     except Exception as e:
         return None, f"连接服务器失败: {str(e)}"
 
@@ -408,6 +423,79 @@ def show_main_app():
                             st.error(f"❌ 处理失败: {task.get('error_message', '未知错误')}")
                     else:
                         st.error(f"上传失败: {error}")
+
+        st.divider()
+        st.header("🔍 PubMed 文献检索")
+        st.caption("输入关键字，自动从 PubMed 下载文献并入库 RAG")
+
+        pubmed_keyword = st.text_input("搜索关键字", key="pubmed_keyword",
+                                        placeholder="如: plant CpG island methylation")
+        pubmed_max = st.slider("文献数量", min_value=1, max_value=10, value=3, key="pubmed_max")
+
+        if st.button("🔍 搜索并下载", use_container_width=True, key="pubmed_search_btn"):
+            if not pubmed_keyword.strip():
+                st.error("请输入搜索关键字")
+            else:
+                with st.spinner("提交检索任务..."):
+                    result, error = api_pubmed_search(pubmed_keyword.strip(), pubmed_max)
+                    if result:
+                        task_id = result.get("task_id")
+                        st.success(f"任务已提交！ID: {task_id}")
+                        # 轮询任务状态
+                        status_placeholder = st.empty()
+                        progress_bar = st.progress(0)
+                        task = None
+                        for _ in range(120):  # 最多等 4 分钟（120 * 2s）
+                            time.sleep(2)
+                            task, _ = api_get_task(task_id)
+                            if task:
+                                progress = task.get("progress", 0)
+                                status = task.get("status", "")
+                                status_placeholder.info(f"状态: {status} | 进度: {progress}%")
+                                progress_bar.progress(min(progress / 100, 1.0))
+                                if status in ("completed", "failed"):
+                                    break
+                        status_placeholder.empty()
+                        progress_bar.empty()
+
+                        if task and task.get("status") == "completed":
+                            task_result = task.get("result") or {}
+                            if isinstance(task_result, str):
+                                import json
+                                try:
+                                    task_result = json.loads(task_result)
+                                except Exception:
+                                    task_result = {}
+                            total = task_result.get("total", 0)
+                            success = task_result.get("success", 0)
+                            failed = task_result.get("failed", 0)
+                            st.success(f"✅ 完成！成功 {success}/{total} 篇，失败 {failed} 篇")
+
+                            # 展示每篇文献的结果
+                            articles = task_result.get("articles", [])
+                            if articles:
+                                with st.expander("📚 文献详情", expanded=True):
+                                    for art in articles:
+                                        status_icon = "✅" if art.get("status") == "completed" else "❌"
+                                        source = art.get("source", "")
+                                        source_label = "全文" if source == "full_text" else ("摘要" if source == "abstract" else "")
+                                        st.markdown(
+                                            f"{status_icon} **PMID: {art.get('pmid', '?')}** "
+                                            f"{'(`' + source_label + '`)' if source_label else ''}"
+                                        )
+                                        st.markdown(f"  {art.get('title', '?')[:80]}")
+                                        if art.get("status") == "completed":
+                                            st.markdown(f"  📊 {art.get('chunk_count', 0)} chunks")
+                                        elif art.get("error"):
+                                            st.markdown(f"  ⚠️ {art.get('error')[:80]}")
+                                        st.divider()
+                            st.info("💡 文献已入库，现在可以在聊天中提问相关内容了")
+                        elif task and task.get("status") == "failed":
+                            st.error(f"❌ 检索失败: {task.get('error_message', '未知错误')}")
+                        else:
+                            st.warning("⏳ 任务仍在进行中，可稍后在任务列表查看")
+                    else:
+                        st.error(f"检索失败: {error}")
 
     # 主区域：聊天
     if not st.session_state.current_session_id:

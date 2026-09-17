@@ -28,3 +28,18 @@ class DocumentUploadResponse(BaseModel):
     filename: str
     status: str = "pending"
     message: str = "文档已提交，正在后台处理"
+
+
+class PubMedSearchRequest(BaseModel):
+    """PubMed 文献搜索请求。"""
+    keyword: str
+    max_results: int = 5
+
+
+class PubMedSearchResponse(BaseModel):
+    """PubMed 文献搜索响应（异步任务）。"""
+    task_id: int
+    keyword: str
+    max_results: int
+    status: str = "pending"
+    message: str = "PubMed 检索任务已提交，正在后台下载并入库"

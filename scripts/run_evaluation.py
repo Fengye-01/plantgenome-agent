@@ -48,17 +48,29 @@ def evaluate_item(item: dict) -> dict:
         tool_correct = (tool_name == expected_tool)
 
         # 2. HitRate@3（仅 literature_search 类）
+        # 匹配策略：检查期望来源关键词是否出现在任一来源的
+        # 文件名 / snippet（摘要）/ heading_path（章节路径）中
+        # 不只用文件名匹配，因为 PDF 文件名通常是论文标题，不包含主题关键词
         hit_at_3 = None
         if category == "literature_search" and expected_source:
-            source_files = []
+            expected = expected_source.lower()
+            hit_at_3 = False
             for s in sources:
                 if isinstance(s, dict):
+                    # 检查文件名
                     fname = s.get("filename", "").lower()
-                    source_files.append(fname)
+                    # 检查 snippet（摘要片段）
+                    snippet = s.get("snippet", "").lower()
+                    # 检查 heading_path（章节路径）
+                    heading = s.get("heading_path", "").lower()
+                    # 任一维度匹配即算命中
+                    if expected in fname or expected in snippet or expected in heading:
+                        hit_at_3 = True
+                        break
                 elif isinstance(s, str):
-                    source_files.append(s.lower())
-            # 检查期望来源关键词是否出现在任一来源文件名中
-            hit_at_3 = any(expected_source.lower() in sf for sf in source_files)
+                    if expected in s.lower():
+                        hit_at_3 = True
+                        break
 
         # 3. 回答关键词命中率
         answer_lower = final_answer.lower()
