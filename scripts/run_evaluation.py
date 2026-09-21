@@ -45,7 +45,13 @@ def evaluate_item(item: dict) -> dict:
         execution_log = result.get("execution_log", [])
 
         # 1. 工具调用准确率
-        tool_correct = (tool_name == expected_tool)
+        # 多工具链式调用时，最终状态的 tool_name 是最后一次 router 的结果（可能为 None），
+        # 因此从 tool_history 中判断是否调用过期望工具
+        tool_history = result.get("tool_history", []) or []
+        called_tools = [h.get("tool") for h in tool_history if h.get("tool")]
+        if not called_tools and tool_name:
+            called_tools = [tool_name]
+        tool_correct = expected_tool in called_tools
 
         # 2. HitRate@3（仅 literature_search 类）
         # 匹配策略：检查期望来源关键词是否出现在任一来源的
@@ -162,7 +168,7 @@ def main():
 
     # 分类统计
     category_stats = {}
-    for cat in ["literature_search", "fasta_analysis", "cpg_scan", "pipeline_suggest"]:
+    for cat in ["literature_search", "literature_discovery", "gene_query", "fasta_analysis", "cpg_scan", "pipeline_suggest"]:
         cat_results = [r for r in results if r["category"] == cat]
         if cat_results:
             cat_tool_acc = sum(1 for r in cat_results if r["tool_correct"]) / len(cat_results)

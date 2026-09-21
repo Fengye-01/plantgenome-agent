@@ -44,6 +44,7 @@ services:
     image: redis:7-alpine
     container_name: plantgenome-redis
     restart: unless-stopped
+    command: redis-server --appendonly yes --appendfsync everysec
     ports:
       - "6379:6379"
     volumes:

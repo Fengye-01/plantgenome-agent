@@ -106,8 +106,9 @@ def _ingest_pdf_to_db(
 
     added_ids = vector_store.add_documents(chunks_for_vectordb)
 
-    # 5. 保存 DocumentChunk 记录
+    # 5. 保存 DocumentChunk 记录（先清除旧记录，保证幂等）
     print(f"[Ingest] 步骤 5/5: 保存元数据")
+    db.query(DocumentChunk).filter(DocumentChunk.document_id == document_id).delete()
     for i, (chunk, chroma_id) in enumerate(zip(chunks, added_ids)):
         doc_chunk = DocumentChunk(
             document_id=document_id,
@@ -159,6 +160,16 @@ async def process_pdf_document(
         document = db.query(Document).filter(Document.id == document_id).first()
         if not document:
             raise Retry(defer=10)
+
+        # 幂等检查：如果文档已经处理完成，直接返回，不重复处理
+        if document.status == "completed":
+            print(f"[Worker] 文档 {document_id} 已处理完成，跳过")
+            return {
+                "status": "already_completed",
+                "document_id": document_id,
+                "chunk_count": document.chunk_count or 0,
+                "filename": document.filename,
+            }
 
         task = db.query(Task).filter(Task.id == task_id).first()
 

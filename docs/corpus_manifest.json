@@ -1,0 +1,63 @@
+{
+  "total_chunks": 398,
+  "total_unique_documents": 14,
+  "documents": [
+    {
+      "filename": "1_1789164331_Angermueller_2017_DeepCpG_ Accurate prediction of single-cell DNA methylation states using deep learning.pdf",
+      "chunk_count": 49
+    },
+    {
+      "filename": "1_1789188147_Bock_2007_CpG island mapping by epigenome prediction.pdf",
+      "chunk_count": 29
+    },
+    {
+      "filename": "1_1789191526_PAML_test_upload.pdf",
+      "chunk_count": 14
+    },
+    {
+      "filename": "1_1789201769_Cain_2022_Intragenic CpG islands and their impact on gene regulation.pdf",
+      "chunk_count": 19
+    },
+    {
+      "filename": "Ashikawa - 2001 - Gene-associated CpG islands in plants as revealed by analyses of genomic sequences.pdf",
+      "chunk_count": 20
+    },
+    {
+      "filename": "Cantalapiedra 等 - 2021 - eggNOG-mapper v2 Functional annotation, orthology assignments, and domain prediction at the metagen.pdf",
+      "chunk_count": 20
+    },
+    {
+      "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology inference for comparative genomics.pdf",
+      "chunk_count": 39
+    },
+    {
+      "filename": "Epigenetic Regulation in Plants.pdf",
+      "chunk_count": 68
+    },
+    {
+      "filename": "Kalyaanamoorthy 等 - 2017 - ModelFinder Fast model selection for accurate phylogenetic estimates.pdf",
+      "chunk_count": 24
+    },
+    {
+      "filename": "Katoh和Standley - 2013 - MAFFT multiple sequence alignment software version 7 Improvements in performance and usability.pdf",
+      "chunk_count": 30
+    },
+    {
+      "filename": "Minh 等 - 2020 - IQ-TREE 2 New models and efficient methods for phylogenetic inference in the genomic era.pdf",
+      "chunk_count": 20
+    },
+    {
+      "filename": "Mistry 等 - 2021 - Pfam The protein families database in 2021.pdf",
+      "chunk_count": 24
+    },
+    {
+      "filename": "Research Progress in the Molecular Functions of Plant.pdf",
+      "chunk_count": 28
+    },
+    {
+      "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum likelihood.pdf",
+      "chunk_count": 14
+    }
+  ],
+  "removed_duplicate_chunks": 76
+}

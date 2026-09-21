@@ -1,0 +1,217 @@
+{
+  "description": "RAG Gold Set V2 - 基于冻结corpus人工标注",
+  "corpus": "14 documents, 398 chunks",
+  "labels": {
+    "1": {
+      "label": "answerable",
+      "relevant_docs": [
+        "PAML"
+      ],
+      "reason": "Yang 2007 PAML 4手册详细解释omega/dN/dS"
+    },
+    "2": {
+      "label": "answerable",
+      "relevant_docs": [
+        "OrthoFinder"
+      ],
+      "reason": "OrthoFinder 2019论文描述输入格式"
+    },
+    "3": {
+      "label": "answerable",
+      "relevant_docs": [
+        "MAFFT"
+      ],
+      "reason": "MAFFT 2013论文描述L-INS-i/G-INS-i"
+    },
+    "4": {
+      "label": "answerable",
+      "relevant_docs": [
+        "Research Progress"
+      ],
+      "reason": "Research Progress论文提到mTERF"
+    },
+    "5": {
+      "label": "answerable",
+      "relevant_docs": [
+        "Bock",
+        "Ashikawa",
+        "Cain",
+        "DeepCpG"
+      ],
+      "reason": "多篇CpG岛论文描述定义标准"
+    },
+    "6": {
+      "label": "answerable",
+      "relevant_docs": [
+        "PAML"
+      ],
+      "reason": "PAML手册描述codeml分支/位点模型"
+    },
+    "7": {
+      "label": "answerable",
+      "relevant_docs": [
+        "IQ-TREE",
+        "OrthoFinder",
+        "MAFFT",
+        "ModelFinder"
+      ],
+      "reason": "系统发育分析流程在多个工具文档中有描述"
+    },
+    "8": {
+      "label": "answerable",
+      "relevant_docs": [
+        "Bock",
+        "Cain",
+        "DeepCpG",
+        "Epigenetic"
+      ],
+      "reason": "多篇论文讨论DNA甲基化与CpG岛关系"
+    },
+    "9": {
+      "label": "answerable",
+      "relevant_docs": [
+        "OrthoFinder"
+      ],
+      "reason": "OrthoFinder论文描述输出结果"
+    },
+    "10": {
+      "label": "answerable",
+      "relevant_docs": [
+        "OrthoFinder"
+      ],
+      "reason": "OrthoFinder论文介绍比较基因组学"
+    },
+    "12": {
+      "label": "answerable",
+      "relevant_docs": [
+        "IQ-TREE"
+      ],
+      "reason": "IQ-TREE 2论文对比其他方法"
+    },
+    "18": {
+      "label": "answerable",
+      "relevant_docs": [
+        "PAML"
+      ],
+      "reason": "PAML手册描述正选择/纯化选择检测"
+    },
+    "21": {
+      "label": "answerable",
+      "relevant_docs": [
+        "MAFFT"
+      ],
+      "reason": "MAFFT论文对比ClustalW"
+    },
+    "24": {
+      "label": "answerable",
+      "relevant_docs": [
+        "Pfam"
+      ],
+      "reason": "Pfam论文描述HMMER/HMM模型"
+    },
+    "25": {
+      "label": "answerable",
+      "relevant_docs": [
+        "OrthoFinder"
+      ],
+      "reason": "OrthoFinder论文定义Orthogroup"
+    },
+    "28": {
+      "label": "answerable",
+      "relevant_docs": [
+        "DeepCpG",
+        "Bock",
+        "Cain"
+      ],
+      "reason": "DeepCpG和CpG岛论文涉及BS-seq/甲基化分析"
+    },
+    "33": {
+      "label": "answerable",
+      "relevant_docs": [
+        "PAML"
+      ],
+      "reason": "PAML手册描述branch-site model"
+    },
+    "34": {
+      "label": "answerable",
+      "relevant_docs": [
+        "MAFFT",
+        "IQ-TREE"
+      ],
+      "reason": "MAFFT和IQ-TREE论文讨论gap处理"
+    },
+    "11": {
+      "label": "ambiguous",
+      "reason": "Pfam论文提到HMMER但不专门讲BLAST vs HMMER区别"
+    },
+    "16": {
+      "label": "ambiguous",
+      "reason": "Epigenetic Regulation可能提到转录因子但不专门讲WRKY"
+    },
+    "17": {
+      "label": "ambiguous",
+      "reason": "Pfam有NBS-LRR结构域但不专门讲分类"
+    },
+    "19": {
+      "label": "ambiguous",
+      "reason": "IQ-TREE论文可能提到FastTree对比但不详细"
+    },
+    "29": {
+      "label": "ambiguous",
+      "reason": "Epigenetic Regulation可能提到小RNA但不专门讲"
+    },
+    "13": {
+      "label": "unanswerable",
+      "reason": "知识库无共线性/MCScan相关文档"
+    },
+    "14": {
+      "label": "unanswerable",
+      "reason": "知识库无密码子偏好性相关文档"
+    },
+    "15": {
+      "label": "unanswerable",
+      "reason": "知识库无叶绿体基因组专门文档"
+    },
+    "20": {
+      "label": "unanswerable",
+      "reason": "知识库无MEGA软件文档"
+    },
+    "22": {
+      "label": "unanswerable",
+      "reason": "知识库无泛基因组相关文档"
+    },
+    "23": {
+      "label": "unanswerable",
+      "reason": "知识库无复制基因进化专门文档"
+    },
+    "26": {
+      "label": "unanswerable",
+      "reason": "知识库无群体遗传学/连锁不平衡文档"
+    },
+    "27": {
+      "label": "unanswerable",
+      "reason": "知识库无GWAS相关文档"
+    },
+    "30": {
+      "label": "unanswerable",
+      "reason": "知识库无CRISPR相关文档"
+    },
+    "31": {
+      "label": "unanswerable",
+      "reason": "知识库无结构变异相关文档"
+    },
+    "32": {
+      "label": "unanswerable",
+      "reason": "知识库无线粒体基因组专门文档"
+    },
+    "35": {
+      "label": "unanswerable",
+      "reason": "知识库无共线性区块相关文档"
+    }
+  },
+  "statistics": {
+    "answerable": 18,
+    "unanswerable": 12,
+    "ambiguous": 5
+  }
+}

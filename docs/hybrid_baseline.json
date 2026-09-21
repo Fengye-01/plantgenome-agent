@@ -1,0 +1,682 @@
+{
+  "method": "Dense (BGE-m3) + BM25 + RRF(k=60)",
+  "summary": {
+    "answerable_n": 18,
+    "hit@1": 16,
+    "hit@1_rate": 0.8889,
+    "hit@3": 16,
+    "hit@3_rate": 0.8889,
+    "hit@5": 17,
+    "hit@5_rate": 0.9444,
+    "mrr": 0.9,
+    "avg_latency_ms": 95.9
+  },
+  "details": [
+    {
+      "id": 1,
+      "question": "PAML 中的 omega (dN/dS) 值怎么解释？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 190.3,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.032522
+        },
+        {
+          "rank": 2,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.030679
+        },
+        {
+          "rank": 3,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.016129
+        },
+        {
+          "rank": 4,
+          "filename": "Cantalapiedra 等 - 2021 - eggNOG-mapper v2 Functional an",
+          "rrf": 0.015873
+        },
+        {
+          "rank": 5,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.015873
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "question": "OrthoFinder 的输入需要什么格式？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 86.4,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.032002
+        },
+        {
+          "rank": 2,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.031319
+        },
+        {
+          "rank": 3,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.031281
+        },
+        {
+          "rank": 4,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.031258
+        },
+        {
+          "rank": 5,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.03055
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "question": "MAFFT 的 L-INS-i 和 G-INS-i 有什么区别？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 91.3,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "Katoh和Standley - 2013 - MAFFT multiple sequence alignme",
+          "rrf": 0.032787
+        },
+        {
+          "rank": 2,
+          "filename": "Katoh和Standley - 2013 - MAFFT multiple sequence alignme",
+          "rrf": 0.032002
+        },
+        {
+          "rank": 3,
+          "filename": "Katoh和Standley - 2013 - MAFFT multiple sequence alignme",
+          "rrf": 0.031258
+        },
+        {
+          "rank": 4,
+          "filename": "Katoh和Standley - 2013 - MAFFT multiple sequence alignme",
+          "rrf": 0.03055
+        },
+        {
+          "rank": 5,
+          "filename": "Katoh和Standley - 2013 - MAFFT multiple sequence alignme",
+          "rrf": 0.029911
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "question": "mTERF 基因家族在植物中的功能是什么？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 86.1,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "Research Progress in the Molecular Functions of Plant.p",
+          "rrf": 0.032522
+        },
+        {
+          "rank": 2,
+          "filename": "Research Progress in the Molecular Functions of Plant.p",
+          "rrf": 0.031754
+        },
+        {
+          "rank": 3,
+          "filename": "Research Progress in the Molecular Functions of Plant.p",
+          "rrf": 0.030798
+        },
+        {
+          "rank": 4,
+          "filename": "Research Progress in the Molecular Functions of Plant.p",
+          "rrf": 0.030769
+        },
+        {
+          "rank": 5,
+          "filename": "Research Progress in the Molecular Functions of Plant.p",
+          "rrf": 0.029644
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "question": "什么是 CpG 岛？它的定义标准是什么？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 88.2,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "1_1789188147_Bock_2007_CpG island mapping by epigenome ",
+          "rrf": 0.032266
+        },
+        {
+          "rank": 2,
+          "filename": "1_1789188147_Bock_2007_CpG island mapping by epigenome ",
+          "rrf": 0.031754
+        },
+        {
+          "rank": 3,
+          "filename": "1_1789188147_Bock_2007_CpG island mapping by epigenome ",
+          "rrf": 0.031514
+        },
+        {
+          "rank": 4,
+          "filename": "1_1789188147_Bock_2007_CpG island mapping by epigenome ",
+          "rrf": 0.030077
+        },
+        {
+          "rank": 5,
+          "filename": "1_1789188147_Bock_2007_CpG island mapping by epigenome ",
+          "rrf": 0.029418
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "question": "PAML codeml 的分支模型和位点模型有什么区别？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 87.6,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.032018
+        },
+        {
+          "rank": 2,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.032002
+        },
+        {
+          "rank": 3,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.032002
+        },
+        {
+          "rank": 4,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.031778
+        },
+        {
+          "rank": 5,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.030777
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "question": "怎么做基因家族的系统发育分析？",
+      "first_relevant_rank": 5,
+      "hit@1": false,
+      "hit@3": false,
+      "hit@5": true,
+      "rr": 0.2,
+      "total_time_ms": 87.1,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "1_1789188147_Bock_2007_CpG island mapping by epigenome ",
+          "rrf": 0.016393
+        },
+        {
+          "rank": 2,
+          "filename": "Ashikawa - 2001 - Gene-associated CpG islands in plants",
+          "rrf": 0.016393
+        },
+        {
+          "rank": 3,
+          "filename": "Mistry 等 - 2021 - Pfam The protein families database in",
+          "rrf": 0.016129
+        },
+        {
+          "rank": 4,
+          "filename": "Ashikawa - 2001 - Gene-associated CpG islands in plants",
+          "rrf": 0.016129
+        },
+        {
+          "rank": 5,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.015873
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "question": "DNA 甲基化和 CpG 岛有什么关系？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 84.1,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "1_1789188147_Bock_2007_CpG island mapping by epigenome ",
+          "rrf": 0.032258
+        },
+        {
+          "rank": 2,
+          "filename": "1_1789188147_Bock_2007_CpG island mapping by epigenome ",
+          "rrf": 0.03101
+        },
+        {
+          "rank": 3,
+          "filename": "1_1789188147_Bock_2007_CpG island mapping by epigenome ",
+          "rrf": 0.030886
+        },
+        {
+          "rank": 4,
+          "filename": "1_1789188147_Bock_2007_CpG island mapping by epigenome ",
+          "rrf": 0.030798
+        },
+        {
+          "rank": 5,
+          "filename": "1_1789164331_Angermueller_2017_DeepCpG_ Accurate predic",
+          "rrf": 0.016393
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "question": "OrthoFinder 输出结果怎么解读？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 82.1,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.032266
+        },
+        {
+          "rank": 2,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.031514
+        },
+        {
+          "rank": 3,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.031319
+        },
+        {
+          "rank": 4,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.030415
+        },
+        {
+          "rank": 5,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.030331
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "question": "比较基因组学主要分析哪些内容？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 88.4,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.016393
+        },
+        {
+          "rank": 2,
+          "filename": "Ashikawa - 2001 - Gene-associated CpG islands in plants",
+          "rrf": 0.016393
+        },
+        {
+          "rank": 3,
+          "filename": "Minh 等 - 2020 - IQ-TREE 2 New models and efficient meth",
+          "rrf": 0.016129
+        },
+        {
+          "rank": 4,
+          "filename": "Ashikawa - 2001 - Gene-associated CpG islands in plants",
+          "rrf": 0.016129
+        },
+        {
+          "rank": 5,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.015873
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "question": "IQ-TREE 和 RAxML 在构建进化树时有什么优劣？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 92.9,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "Minh 等 - 2020 - IQ-TREE 2 New models and efficient meth",
+          "rrf": 0.032522
+        },
+        {
+          "rank": 2,
+          "filename": "Minh 等 - 2020 - IQ-TREE 2 New models and efficient meth",
+          "rrf": 0.032018
+        },
+        {
+          "rank": 3,
+          "filename": "Minh 等 - 2020 - IQ-TREE 2 New models and efficient meth",
+          "rrf": 0.032002
+        },
+        {
+          "rank": 4,
+          "filename": "Minh 等 - 2020 - IQ-TREE 2 New models and efficient meth",
+          "rrf": 0.031258
+        },
+        {
+          "rank": 5,
+          "filename": "Minh 等 - 2020 - IQ-TREE 2 New models and efficient meth",
+          "rrf": 0.03055
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "question": "什么是正向选择和纯化选择？怎么检测？",
+      "first_relevant_rank": null,
+      "hit@1": false,
+      "hit@3": false,
+      "hit@5": false,
+      "rr": 0.0,
+      "total_time_ms": 87.0,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "Ashikawa - 2001 - Gene-associated CpG islands in plants",
+          "rrf": 0.032522
+        },
+        {
+          "rank": 2,
+          "filename": "Ashikawa - 2001 - Gene-associated CpG islands in plants",
+          "rrf": 0.031258
+        },
+        {
+          "rank": 3,
+          "filename": "Ashikawa - 2001 - Gene-associated CpG islands in plants",
+          "rrf": 0.030331
+        },
+        {
+          "rank": 4,
+          "filename": "Ashikawa - 2001 - Gene-associated CpG islands in plants",
+          "rrf": 0.029877
+        },
+        {
+          "rank": 5,
+          "filename": "Ashikawa - 2001 - Gene-associated CpG islands in plants",
+          "rrf": 0.029437
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "question": "ClustalW 和 MAFFT 相比有什么区别？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 87.6,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "Katoh和Standley - 2013 - MAFFT multiple sequence alignme",
+          "rrf": 0.031498
+        },
+        {
+          "rank": 2,
+          "filename": "Katoh和Standley - 2013 - MAFFT multiple sequence alignme",
+          "rrf": 0.030835
+        },
+        {
+          "rank": 3,
+          "filename": "Katoh和Standley - 2013 - MAFFT multiple sequence alignme",
+          "rrf": 0.030679
+        },
+        {
+          "rank": 4,
+          "filename": "Katoh和Standley - 2013 - MAFFT multiple sequence alignme",
+          "rrf": 0.030536
+        },
+        {
+          "rank": 5,
+          "filename": "Katoh和Standley - 2013 - MAFFT multiple sequence alignme",
+          "rrf": 0.03031
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "question": "什么是 HMMER 中的 HMM 模型？怎么构建？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 103.6,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "Mistry 等 - 2021 - Pfam The protein families database in",
+          "rrf": 0.032787
+        },
+        {
+          "rank": 2,
+          "filename": "Kalyaanamoorthy 等 - 2017 - ModelFinder Fast model selec",
+          "rrf": 0.016129
+        },
+        {
+          "rank": 3,
+          "filename": "Cantalapiedra 等 - 2021 - eggNOG-mapper v2 Functional an",
+          "rrf": 0.016129
+        },
+        {
+          "rank": 4,
+          "filename": "Cantalapiedra 等 - 2021 - eggNOG-mapper v2 Functional an",
+          "rrf": 0.015873
+        },
+        {
+          "rank": 5,
+          "filename": "Mistry 等 - 2021 - Pfam The protein families database in",
+          "rrf": 0.015873
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "question": "OrthoFinder 中的 Orthogroup 是什么意思？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 91.3,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.032266
+        },
+        {
+          "rank": 2,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.031754
+        },
+        {
+          "rank": 3,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.031545
+        },
+        {
+          "rank": 4,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.030536
+        },
+        {
+          "rank": 5,
+          "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology ",
+          "rrf": 0.030331
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "question": "BS-seq 是什么？怎么分析 DNA 甲基化？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 100.1,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "1_1789164331_Angermueller_2017_DeepCpG_ Accurate predic",
+          "rrf": 0.032266
+        },
+        {
+          "rank": 2,
+          "filename": "1_1789164331_Angermueller_2017_DeepCpG_ Accurate predic",
+          "rrf": 0.031281
+        },
+        {
+          "rank": 3,
+          "filename": "1_1789164331_Angermueller_2017_DeepCpG_ Accurate predic",
+          "rrf": 0.029631
+        },
+        {
+          "rank": 4,
+          "filename": "Research Progress in the Molecular Functions of Plant.p",
+          "rrf": 0.028992
+        },
+        {
+          "rank": 5,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.016393
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "question": "PAML 中的 branch-site model 用来检测什么？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 96.2,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.032787
+        },
+        {
+          "rank": 2,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.032258
+        },
+        {
+          "rank": 3,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.03101
+        },
+        {
+          "rank": 4,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.030798
+        },
+        {
+          "rank": 5,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.030118
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "question": "多序列比对的 gap 怎么处理？对进化树有什么影响？",
+      "first_relevant_rank": 1,
+      "hit@1": true,
+      "hit@3": true,
+      "hit@5": true,
+      "rr": 1.0,
+      "total_time_ms": 95.4,
+      "top5": [
+        {
+          "rank": 1,
+          "filename": "Katoh和Standley - 2013 - MAFFT multiple sequence alignme",
+          "rrf": 0.031498
+        },
+        {
+          "rank": 2,
+          "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum l",
+          "rrf": 0.016393
+        },
+        {
+          "rank": 3,
+          "filename": "Katoh和Standley - 2013 - MAFFT multiple sequence alignme",
+          "rrf": 0.016393
+        },
+        {
+          "rank": 4,
+          "filename": "1_1789164331_Angermueller_2017_DeepCpG_ Accurate predic",
+          "rrf": 0.016129
+        },
+        {
+          "rank": 5,
+          "filename": "Epigenetic Regulation in Plants.pdf",
+          "rrf": 0.016129
+        }
+      ]
+    }
+  ]
+}
