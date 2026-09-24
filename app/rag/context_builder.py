@@ -51,7 +51,7 @@ class ContextConfig:
     """
     max_tokens: int = 3000                    # 最大 token 数量（上下文窗口限制）
     reserve_ratio: float = 0.2                 # 为系统指令预留的比例
-    min_relevance: float = 0.1                 # 最低相关性阈值
+    min_relevance: float = 0.25                # 最低相关性阈值（对应 distance < 1.5，与 Retriever 对齐）
     enable_compression: bool = True            # 是否启用压缩（超限时截断低相关性）
 
     def __post_init__(self):
@@ -103,12 +103,22 @@ class ContextBuilder:
     输出：结构化上下文字符串 + 选中的 sources 列表
     """
 
-    def __init__(self, config: ContextConfig = None):
+    def __init__(self, config: ContextConfig = None, tokenizer=None):
         """
         Args:
             config: 上下文构建配置（可选，不传则用默认值）
+            tokenizer: BGE-m3 tokenizer 实例（可选，不传则自动加载）
         """
         self.config = config or ContextConfig()
+        self.tokenizer = tokenizer
+        if self.tokenizer is None:
+            try:
+                from transformers import AutoTokenizer
+                self.tokenizer = AutoTokenizer.from_pretrained("BAAI/bge-m3")
+                print("  ✅ ContextBuilder Tokenizer 加载成功: BAAI/bge-m3")
+            except Exception as e:
+                print(f"  ⚠️ ContextBuilder Tokenizer 加载失败: {e}，回退到字符数估算")
+                self.tokenizer = None
 
     def build(
         self,
@@ -326,23 +336,24 @@ class ContextBuilder:
         """
         计算文本的 token 数。
 
-        简化版：用字符数估算（中文约 1 字符 = 1-2 token，英文约 4 字符 = 1 token）。
-        更精确的实现可以用 BGE-m3 的 tokenizer（和 Chunker 里的 _count_tokens 一致）。
-        这里先用简单估算，避免重复加载 tokenizer。
+        优先使用 BGE-m3 tokenizer 精确计算，失败时回退到字符数估算。
 
         Args:
             text: 文本
 
         Returns:
-            token 数估算
+            token 数
         """
         if not text:
             return 0
-        # 简单估算：中文字符数 + 英文单词数 * 1.3
-        # 这是一个粗略估算，实际 token 数可能有偏差
-        chinese_chars = sum(1 for c in text if '\u4e00' <= c <= '\u9fff')
-        english_words = len([w for w in text.split() if any(c.isascii() and c.isalpha() for c in w)])
-        return int(chinese_chars + english_words * 1.3) + 10  # +10 作为开销
+        if self.tokenizer:
+            # add_special_tokens=False：不计算 <[BOS_never_used_51bce0c785ca2f68081bfa7d91973934]> [SEP] 等特殊标记
+            return len(self.tokenizer.encode(text, add_special_tokens=False))
+        else:
+            # Fallback：字符数近似（中文约 1 字符=1 token，英文约 4 字符=1 token，平均约 2）
+            chinese_chars = sum(1 for c in text if '\u4e00' <= c <= '\u9fff')
+            english_words = len([w for w in text.split() if any(c.isascii() and c.isalpha() for c in w)])
+            return int(chinese_chars + english_words * 1.3) + 10
 
 
 # ── 测试：python -m app.rag.context_builder ──

@@ -39,7 +39,13 @@ ROUTER_PROMPT = """你是一个专业的生物信息学任务路由分类器。
 4. fasta_analysis - FASTA 序列统计分析（用户提供或粘贴了 FASTA 序列，要求统计）
 5. cpg_scan - CpG 岛识别扫描（用户提供 DNA 序列并要求找 CpG 岛）
 6. pipeline_suggest - 研究流程/分析方案推荐（用户问"怎么做XX分析""需要什么流程""用什么工具"）
-7. direct_answer - 闲聊、问候、感谢、或不需要调用工具的简单问题
+7. direct_answer - 仅限纯闲聊、问候、感谢、道歉、或与生物信息学完全无关的简单问题
+
+【重要规则 - 必须严格遵守】
+- 涉及基因、序列、文献、生信工具、分析方法、专业概念的问题，必须调用工具，绝对不要 direct_answer
+- 即使你认为自己知道答案，只要问题涉及专业知识，也必须调用检索或分析工具
+- "XX是什么""XX怎么用""XX有什么功能""怎么做XX分析"这类问题，一律调用对应工具
+- direct_answer 只用于"你好""谢谢""再见""你是谁"这类纯对话
 
 【literature_search vs literature_discovery 的区别】
 - literature_search：用户问的是具体概念/方法/工具用法，答案应该在已上传的文献中找
@@ -316,10 +322,15 @@ def router_node(state: AgentState) -> AgentState:
     tool_input = parsed["tool_input"]
 
     # 防止重复调用同一个工具（多工具链式调用的保护机制）
+    # 按"工具名+参数"去重，允许同一工具不同参数多次调用（如先查PAML再查MAFFT）
     if tool_history and tool_name:
-        called_tools = [h.get("tool") for h in tool_history]
-        if tool_name in called_tools and intent != INTENT_DIRECT_ANSWER:
-            # 已经调用过这个工具，强制 direct_answer 结束循环
+        current_call = f"{tool_name}:{json.dumps(tool_input, sort_keys=True, ensure_ascii=False)}"
+        called_calls = [
+            f"{h.get('tool')}:{json.dumps(h.get('tool_input', {}), sort_keys=True, ensure_ascii=False)}"
+            for h in tool_history
+        ]
+        if current_call in called_calls and intent != INTENT_DIRECT_ANSWER:
+            # 完全相同的调用（工具名+参数都一样），强制 direct_answer 结束循环
             intent = INTENT_DIRECT_ANSWER
             tool_name = None
             tool_input = {}
@@ -499,6 +510,7 @@ def tool_node(state: AgentState) -> AgentState:
         # 累积到 tool_history（供多工具链式调用时 router 判断）
         state.setdefault("tool_history", []).append({
             "tool": tool_name,
+            "tool_input": tool_input,
             "status": "success",
             "latency": latency,
         })
@@ -518,6 +530,7 @@ def tool_node(state: AgentState) -> AgentState:
         # 累积到 tool_history
         state.setdefault("tool_history", []).append({
             "tool": tool_name,
+            "tool_input": tool_input,
             "status": "failed",
             "error": error_msg,
             "latency": latency,

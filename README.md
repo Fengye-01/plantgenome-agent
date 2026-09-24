@@ -194,19 +194,33 @@ streamlit run frontend/app.py --server.port 8501 --server.fileWatcherType none
 
 ## 📊 评估结果
 
-在自建 20 条测试集上的评估结果（2026-09-10）：
+### 检索评估（Gold Set V2，35 题）
 
-| 指标 | 数值 | 说明 |
-|------|------|------|
-| 工具调用准确率 | 95.0% (19/20) | Agent 自动选择正确工具的比例 |
-| RAG HitRate@3 | 40.0% (4/10) | 仅文献检索类，偏低，原因见下方说明 |
-| 回答关键词命中率 | 68.1% | 回答中包含期望关键词的平均比例 |
-| 纯计算工具响应 | <6s | FASTA 统计 / CpG 岛扫描（平均 4.5-6.1s） |
-| 平均响应时间 | 19.0s | 完整 Agent 链路，主要瓶颈在 LLM 推理 |
+构建 35 题 Gold Set V2，区分 18 条可回答、12 条不可回答、5 条歧义问题：
 
-> **HitRate@3 说明**：初版评估 40% 的主要原因是 sources 传递 Bug 和评估脚本匹配逻辑过于严格。已修复：①answer_node 不再限制 intent 提取 sources；②评估脚本改为文件名+snippet+heading_path 三维度匹配；③回答 prompt 增加防重复指令。修复后 HitRate 预期提升至 70%+。详细错误分析见 [docs/evaluation.md](docs/evaluation.md)。
+| 指标 | Dense（纯向量） | Hybrid（向量+BM25+RRF） |
+|------|----------------|----------------------|
+| HitRate@1 | 77.8% | **88.9%** |
+| HitRate@3 | **94.4%** | 88.9% |
+| HitRate@5 | 94.4% | 94.4% |
+| MRR | 0.843 | **0.900** |
 
-> 详细评估报告见 [docs/evaluation.md](docs/evaluation.md)，评估方法见 [docs/evaluation_methods.md](docs/evaluation_methods.md)，原始数据见 [docs/evaluation_results.json](docs/evaluation_results.json)
+> Hybrid 改善了首位命中（Hit@1）和整体排序（MRR），但 Hit@3 略有下降——BM25 把部分边缘正确答案挤出了 Top3，属于 trade-off，不是全面提升。
+
+### 端到端 Agent 评估（100 条用例）
+
+| 指标 | 数值 |
+|------|------|
+| 工具调用准确率 | **96%**（96/100） |
+| 已知错误 | 4 条，全部为 Router 把需工具调用的问题误判为 direct_answer |
+| 平均响应时间 | 14.6s |
+
+### 已知失败 case
+
+- **Case 18（跨语言召回失败）**：中文 query"正选择/纯化选择"未能召回英文 PAML 论文证据，BGE-m3 跨语言对齐不完美，BM25 字面匹配失效
+- **路由误判**：泛化表述（如"基因家族功能是什么"）容易被 7B 模型判为 direct_answer
+
+> 评估方法见 [docs/evaluation_methods.md](docs/evaluation_methods.md)，原始数据见 [docs/evaluation_results.json](docs/evaluation_results.json)
 
 ---
 
@@ -295,30 +309,25 @@ plantgenome-agent/
 
 ## ⚠️ 局限性与 Future Work
 
-### 当前版本（V1）
+### 当前版本的局限
 
 - 主要处理文本型 PDF，扫描件 OCR 和复杂表格解析待实现
-- 工具调用为单轮，不支持多工具链式调用
 - 无多轮对话记忆，每次对话独立
-- 评估集规模较小（15-20 条）
+- Gold Set 规模较小（35 题，其中 18 条可回答），统计显著性有限
+- 跨语言召回存在失败 case（中文 query 搜英文论文）
+- 聊天接口当前为同步实现，高并发性能有限
 - 7B 模型在复杂推理和 JSON 输出上偶有不稳定
 
-### V2 规划
+### Future Work
 
 - 🔍 **高级检索策略**：MQE（多查询扩展）+ HyDE（假设文档嵌入），已预留接口
-- 🔀 **混合检索**：BM25 关键词检索 + 向量检索 + RRF 融合 + BGE-reranker 重排序
+- 🔀 **Reranker 精排**：知识库规模扩大后加入 BGE-reranker
 - 📊 **RAGAS 自动化评估**：Faithfulness / Context Precision / Answer Relevancy
 - 🧠 **多轮对话记忆**：引入 Memory 模块，支持上下文延续
-- 🔗 **NCBI API 工具**：封装 E-utilities，支持真实序列数据查询
-- 📈 **论文章节结构化解析**：按标题/小标题分块，保留章节结构 metadata
-
-### V3 规划
-
 - 📄 **Marker/GROBID 论文结构化解析**：表格提取 + 图片 caption + 参考文献识别
 - 🔌 **MCP 协议支持**：外部工具动态接入，替代硬编码注册
 - 🧬 **生信软件真实执行**：MAFFT / OrthoFinder / PAML / eggNOG 容器化执行
 - 🤝 **多 Agent 协作**：研究规划 Agent + 执行 Agent + 评审 Agent
-- 🐳 **Docker 容器化部署**：docker compose 一键启动
 - ☁️ **云服务部署**：Hugging Face Spaces / 阿里云 / 腾讯云
 
 ---
@@ -336,7 +345,3 @@ MIT License
 - [Chroma](https://github.com/chroma-core/chroma) — 向量数据库
 - [BGE-m3](https://huggingface.co/BAAI/bge-m3) — 中英文混合 embedding 模型
 - [PyMuPDF](https://github.com/pymupdf/PyMuPDF) — PDF 解析库
-
----
-
-*PlantGenome Agent · 基于 Hello Agents 教程构建 · 2026*

@@ -54,12 +54,12 @@ class Chunker:
     ):
         """
         Args:
-            chunk_size: 每个 chunk 的最大 token 数，默认从 .env 读 CHUNK_SIZE（800）
-            chunk_overlap: 相邻 chunk 的重叠 token 数，默认从 .env 读 CHUNK_OVERLAP（100）
+            chunk_size: 每个 chunk 的最大 token 数，默认从 .env 读 CHUNK_SIZE（600）
+            chunk_overlap: 相邻 chunk 的重叠 token 数，默认从 .env 读 CHUNK_OVERLAP（50）
             embedding_model: embedding 模型名，用于加载对应 tokenizer，默认 BAAI/bge-m3
         """
-        self.chunk_size = chunk_size or int(os.getenv("CHUNK_SIZE", "800"))
-        self.chunk_overlap = chunk_overlap or int(os.getenv("CHUNK_OVERLAP", "100"))
+        self.chunk_size = chunk_size or int(os.getenv("CHUNK_SIZE", "600"))
+        self.chunk_overlap = chunk_overlap or int(os.getenv("CHUNK_OVERLAP", "50"))
         self.embedding_model = embedding_model or os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3")
 
         # 校验参数
