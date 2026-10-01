@@ -33,6 +33,7 @@ class ScanCpgIslandsInput(ToolInput):
 class SuggestPipelineInput(ToolInput):
     research_goal: str = Field(min_length=1)
     top_k: int = Field(default=3, ge=1, le=20)
+    user_id: int | None = Field(default=None, ge=1)
 
 
 class SearchPubmedInput(ToolInput):

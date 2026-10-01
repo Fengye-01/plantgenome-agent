@@ -185,17 +185,21 @@ def delete_document(
     except Exception:
         pass
 
-    # 从 Chroma 删除向量
-    try:
-        chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id == document_id).all()
-        chroma_ids = [c.chroma_id for c in chunks if c.chroma_id]
-        if chroma_ids:
+    # 从 Chroma 删除向量。失败必须可观察：中止删除、保留 SQL 记录，用户可重试，
+    # 避免出现"SQL 已删但向量残留"的孤儿数据。
+    chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id == document_id).all()
+    chroma_ids = [c.chroma_id for c in chunks if c.chroma_id]
+    if chroma_ids:
+        try:
             from app.rag.vector_store import VectorStore
 
             vector_store = VectorStore()
             vector_store.delete_documents(chroma_ids)
-    except Exception:
-        pass
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"向量删除失败，数据库记录已保留，可重试删除：{str(e)[:200]}",
+            )
 
     # 删除数据库记录（级联删除 DocumentChunk）
     db.delete(document)

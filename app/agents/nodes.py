@@ -467,6 +467,12 @@ def _prepare_tool_input(
         if user_id is not None:
             tool_input["user_id"] = user_id
 
+    if tool_name == "suggest_pipeline":
+        # suggest_pipeline 内部会再调用 search_pdf_knowledge，必须透传 user_id
+        tool_input.pop("user_id", None)
+        if user_id is not None:
+            tool_input["user_id"] = user_id
+
     return tool_input
 
 

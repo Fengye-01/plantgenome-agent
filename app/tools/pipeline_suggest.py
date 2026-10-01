@@ -180,7 +180,11 @@ def parse_pipeline_output(response: str) -> Dict[str, Any]:
 # 主工具函数
 # ═══════════════════════════════════════════════════════════════
 
-def suggest_pipeline(research_goal: str, top_k: int = 3) -> Dict[str, Any]:
+def suggest_pipeline(
+    research_goal: str,
+    top_k: int = 3,
+    user_id: Optional[int] = None,
+) -> Dict[str, Any]:
     """
     基于知识库 RAG + LLM 生成步骤化的分析流程。
 
@@ -189,6 +193,7 @@ def suggest_pipeline(research_goal: str, top_k: int = 3) -> Dict[str, Any]:
     Args:
         research_goal: 研究目标描述
         top_k: RAG 检索的文档数量，默认 3
+        user_id: 用户 ID（由 JWT 认证态注入），用于用户级检索隔离
 
     Returns:
         dict，包含：
@@ -204,8 +209,8 @@ def suggest_pipeline(research_goal: str, top_k: int = 3) -> Dict[str, Any]:
         - LLM 调用失败
         - JSON 解析失败（有兜底）
     """
-    # 第一步：检索相关文献
-    rag_result = search_pdf_knowledge(research_goal, top_k=top_k)
+    # 第一步：检索相关文献（传入 user_id，保证用户隔离）
+    rag_result = search_pdf_knowledge(research_goal, top_k=top_k, user_id=user_id)
     context = rag_result.get("context", "")
     sources = rag_result.get("sources", [])
     has_rag_result = rag_result.get("has_result", False)
