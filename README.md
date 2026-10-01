@@ -194,18 +194,32 @@ streamlit run frontend/app.py --server.port 8501 --server.fileWatcherType none
 
 ## 📊 评估结果
 
-### 检索评估（Gold Set V2，35 题）
+### 检索评估（三模式，离线）
 
-构建 35 题 Gold Set V2，区分 18 条可回答、12 条不可回答、5 条歧义问题：
+系统支持三种检索模式，由环境变量 `RETRIEVAL_MODE` 控制：
 
-| 指标 | Dense（纯向量） | Hybrid（向量+BM25+RRF） |
-|------|----------------|----------------------|
-| HitRate@1 | 77.8% | **88.9%** |
-| HitRate@3 | **94.4%** | 88.9% |
-| HitRate@5 | 94.4% | 94.4% |
-| MRR | 0.843 | **0.900** |
+| 模式 | 说明 | 默认 |
+|------|------|------|
+| `dense_only` | 纯 BGE-m3 向量召回 + distance 门控 | |
+| `candidate_rrf` | Dense 候选集内 BM25 重排 + RRF | ✅ 默认 |
+| `global_rrf` | 用户全库 Dense / BM25 **各自独立召回** + RRF（已实现） | |
 
-> Hybrid 改善了首位命中（Hit@1）和整体排序（MRR），但 Hit@3 略有下降——BM25 把部分边缘正确答案挤出了 Top3，属于 trade-off，不是全面提升。
+**离线评估结果（隔离环境，12 篇 PDF、18 条可回答问题）：**
+
+| 指标 | dense_only | candidate_rrf | global_rrf |
+|------|-----------|---------------|-----------|
+| HitRate@1 | 77.8% | 83.3% | **88.9%** |
+| HitRate@3 | 94.4% | 94.4% | 94.4% |
+| HitRate@5 | 94.4% | 94.4% | 94.4% |
+| MRR | 0.843 | 0.880 | **0.907** |
+
+> `global_rrf` **已实现并完成离线评估**：首位命中率 HitRate@1 从 77.8% 提升到 88.9%、MRR 从 0.843 提升到 0.907；热查询延迟与其他模式相当（约 160ms，首次快照冷构建约 290ms）。**但默认模式仍为 `candidate_rrf`**，可按需通过环境变量切换为 `global_rrf`。
+
+**评估口径与局限（务必注意）：**
+
+- 上述指标来自隔离环境中重新规范入库的 **12 篇 PDF、18 条可回答问题**，样本规模小，**不能代表完整线上效果**。
+- **纯中文 Case 18 仍然失败**：中文 query"正选择/纯化选择"中，英文 BM25 tokenizer 丢弃中文字符、词法召回失效，Dense 也存在语义偏移；详见 [docs/failure_cases.md](docs/failure_cases.md)。
+- 历史 `data/chroma` 早期向量（SQL 无对应记录、ID 含 UUID）未纳入本次评估。
 
 ### 端到端 Agent 评估（100 条用例）
 

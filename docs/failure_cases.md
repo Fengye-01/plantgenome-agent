@@ -126,4 +126,37 @@
 
 ---
 
+## 检索评估失败用例（三模式复现，2026-10）
+
+> 基于隔离环境重新规范入库 12 篇 PDF、18 条 answerable query 的三模式评估
+> （结果见 `docs/retrieval_eval_3modes_*.json`）。18 条中 17 条命中，1 条三模式均失败。
+
+### Case 18：中文 query 的词法召回失效 + Dense 语义偏移
+
+- **Query**：`什么是正向选择和纯化选择？怎么检测？`
+- **Gold 相关文档**：PAML（Yang 2007）。
+
+**各通道真实表现：**
+
+| 通道/模式 | 结果 |
+|-----------|------|
+| Dense 通道 | 正确 chunk `doc1_chunk5` 在 Top-20 中排第 11，distance=0.506（略超阈值），Top-5 全部为 Ashikawa（CpG） |
+| BM25 通道 | **完全为空**：query 为纯中文，tokenizer 正则 `[a-z0-9]+` 丢弃所有中文字符，无有效查询词 |
+| dense_only 最终 | rank=None（miss） |
+| candidate_rrf 最终 | rank=None（miss） |
+| global_rrf 最终 | rank=None（miss） |
+
+**根因（两层）：**
+
+1. **召回/词法层**：BM25 tokenizer 不支持中文分词，纯中文 query 无法匹配英文正文，Sparse 通道对这类 query 完全失效——这是 global_rrf 未能补回的直接原因。
+2. **语义层**：Dense 将中文 query 误导向 CpG 主题，正确 PAML chunk 排名靠后（11）且距离略超门控阈值。
+
+**诚实的面试表述：**
+
+> 当前版本 global_rrf 在含英文术语/软件名的 query 上稳定提升排序，但对纯中文 query，受限于英文词法 tokenizer，BM25 无法生效；这是当前实现的明确限制。如果继续优化，我会优先：① 引入支持中文的分词（如 jieba / 字符 n-gram）让 Sparse 通道覆盖中文；② 用 HyDE/MQE 对 query 做改写改善 Dense 语义偏移；③ 再评估多语言 Cross-Encoder Reranker。
+
+**为什么不优先 Reranker：** 当前唯一失败同时包含中文词法失效（Reranker 前的召回问题）和语义偏移，单纯 Reranker 无法补回未被有效召回的证据，应先解决中文召回与 query 改写。
+
+---
+
 *PlantGenome Agent Failure Cases · D13*

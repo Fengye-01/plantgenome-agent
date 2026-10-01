@@ -174,6 +174,51 @@ stateDiagram-v2
 
 ---
 
+## 图 4：检索模式与用户级全库 BM25（Retrieval Modes）
+
+系统支持三种可配置、可回滚的检索模式，由环境变量 `RETRIEVAL_MODE` 控制：
+
+| 模式 | Dense 召回 | BM25 召回范围 | 说明 |
+|------|-----------|--------------|------|
+| `dense_only` | Chroma Top-K | 不使用 | 纯向量检索，最简单 |
+| `candidate_rrf`（默认） | Chroma Top-K×5 | **仅在 Dense 候选内** | BM25 只能重排候选，无法补回 Dense 漏召回 |
+| `global_rrf` | Chroma 全库 Top-N | **用户全库独立 Top-N** | Dense / Sparse 各自独立召回后 RRF 融合 |
+
+非法配置值保守回退 `candidate_rrf`；运行期异常最终兜底 `dense_only`，检索接口不直接崩溃。
+
+```mermaid
+flowchart TD
+    Q[用户 Query + user_id] --> D[Chroma Dense 独立召回 Top-N<br/>filter user_id]
+    Q --> S[用户级 BM25 快照<br/>独立召回 Sparse Top-N]
+    D --> R[RRF 融合<br/>按共同 chunk_id 去重]
+    S --> R
+    R --> G[分通道证据门控]
+    G --> K[Final Top-K + Sources]
+```
+
+**用户级 BM25 快照（`app/rag/bm25_snapshot.py`）**
+
+- 快照内容：`user_id`、`corpus_version`、`built_at`、`BM25Index`、chunk_id → 正文/元数据映射。
+- 数据源：从 SQL 经 `documents JOIN document_chunks` 加载，只含该用户、`status='completed'`、正文非空、`chroma_id` 非空的 chunk；不加载其他用户数据，也不从 Dense 候选构建。
+- 进程内懒加载，用户级锁（SingleFlight）防并发重复构建，构建成功后原子替换；构建失败保留旧快照并标记 `stale`。
+
+**跨进程失效（Redis 版本键）**
+
+API 与 ARQ Worker 是不同进程，不能共享 Python 内存。版本键 `rag:bm25:version:{user_id}`：
+
+- API 使用快照前比对 Redis 版本，版本变化则重建；
+- Worker 在 SQL + Chroma 均入库成功后递增版本；删除成功后也递增；失败路径不误递增；
+- Redis 不可用时降级为进程内 TTL（默认 300s）判断，并记录警告，不阻断检索。
+
+**当前边界与限制**
+
+- 融合键为 `chroma_id`，规则 `doc{document_id}_chunk{index}`，在当前文档代次内可用；重新切分后身份不保证稳定，稳定 UUID 属后续演进。
+- BM25 tokenizer 为英文/数字词法匹配，**不支持中文分词**：纯中文 query 的词法召回会失效（见 failure_cases.md case 18）。
+- 快照为进程内状态，当前方案适用于单机多进程；多实例水平扩展需演进为共享索引或集中式词法服务。
+- 历史 `data/chroma` 早期向量（SQL 无对应记录、ID 含 UUID）未纳入本次升级验证；三模式评估基于隔离环境中重新规范入库的语料。
+
+---
+
 ## 如何导出为 PNG
 
 1. 打开 https://mermaid.live
