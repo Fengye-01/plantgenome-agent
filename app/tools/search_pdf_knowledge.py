@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
+from app.core.config import settings
 from app.rag.vector_store import VectorStore
 from app.rag.bm25_store import hybrid_search
 
@@ -74,8 +75,38 @@ def search_pdf_knowledge(
             "sources": [],
             "count": 0,
             "has_result": False,
+            "evidence_status": "insufficient",
+            "evidence_reason": "no_results",
+            "best_distance": None,
+            "distance_threshold": settings.rag_max_distance,
             "retrieval_mode": retrieval_mode,
         }
+
+    best_distance = min(
+        (r.get("distance", float("inf")) for r in raw_results),
+        default=float("inf"),
+    )
+    relevant_results = [
+        r
+        for r in raw_results
+        if r.get("distance", float("inf")) <= settings.rag_max_distance
+        and bool((r.get("text") or r.get("content", "")).strip())
+    ]
+
+    if not relevant_results:
+        return {
+            "context": "",
+            "sources": [],
+            "count": 0,
+            "has_result": False,
+            "evidence_status": "insufficient",
+            "evidence_reason": "low_relevance_or_empty_content",
+            "best_distance": round(best_distance, 4),
+            "distance_threshold": settings.rag_max_distance,
+            "retrieval_mode": retrieval_mode,
+        }
+
+    raw_results = relevant_results
 
     # 格式化检索结果
     context_parts = []
@@ -110,7 +141,7 @@ def search_pdf_knowledge(
             "heading_path": heading_path,
             "snippet": content[:200] + "..." if len(content) > 200 else content,
             "distance": round(distance, 4),
-            "similarity": round(1 - distance, 4),  # 余弦距离转相似度
+            "similarity": round(max(0.0, min(1.0, 1 - distance / 2)), 4),
         }
         sources.append(source_info)
 
@@ -119,6 +150,10 @@ def search_pdf_knowledge(
         "sources": sources,
         "count": len(raw_results),
         "has_result": True,
+        "evidence_status": "sufficient",
+        "evidence_reason": None,
+        "best_distance": round(best_distance, 4),
+        "distance_threshold": settings.rag_max_distance,
         "retrieval_mode": retrieval_mode,
     }
 

@@ -44,6 +44,7 @@ def should_call_tool(state: AgentState) -> str:
     判断逻辑（多工具链式调用版本）：
     - intent == direct_answer → 直接回答（不需要工具）
     - tool_name 为 None → 直接回答（没有选中工具）
+    - tool_validation_error 非空 → 直接回答，不执行工具
     - iteration >= MAX_ITERATIONS → 强制结束（防止死循环）
     - 其他情况 → 调用工具（调用完后会回到 router，可继续调用其他工具）
 
@@ -56,6 +57,10 @@ def should_call_tool(state: AgentState) -> str:
     intent = state.get("intent")
     tool_name = state.get("tool_name")
     iteration = state.get("iteration", 0)
+
+    # Router 已判定参数不合法，不允许进入 Tool 节点。
+    if state.get("tool_validation_error"):
+        return "answer"
 
     # 达到最大迭代次数，强制结束（防止死循环）
     if iteration >= MAX_ITERATIONS:

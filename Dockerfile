@@ -1,43 +1,40 @@
 # ============================================================
 # PlantGenome Agent - Dockerfile
 # ============================================================
-# 基础镜像：Python 3.12 slim（轻量级）
-FROM python:3.12-slim
-
-# 设置工作目录
+# 前端只需要 Streamlit、HTTP 客户端和表格展示依赖，不加载模型运行栈。
+FROM python:3.12-slim AS frontend
 WORKDIR /app
-
-# 设置环境变量
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=1000 \
+    PIP_RETRIES=10
+COPY requirements-frontend.txt .
+RUN pip install --no-cache-dir \
+    --index-url https://pypi.tuna.tsinghua.edu.cn/simple \
+    -r requirements-frontend.txt
+COPY frontend ./frontend
+EXPOSE 8501
+CMD ["streamlit", "run", "frontend/app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
 
-# 安装系统依赖（pymupdf / sentence-transformers 可能需要）
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    gcc \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-
-# 先复制 requirements.txt，利用 Docker 缓存层
-COPY requirements.txt .
-
-# 安装 Python 依赖
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 复制项目代码
+# 后端与 Worker 共用完整运行环境。
+FROM python:3.12-slim AS backend
+WORKDIR /app
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=1000 \
+    PIP_RETRIES=10
+RUN pip install --no-cache-dir \
+    --index-url https://download.pytorch.org/whl/cpu \
+    torch==2.6.0
+COPY requirements-backend.txt .
+RUN pip install --no-cache-dir \
+    --index-url https://pypi.tuna.tsinghua.edu.cn/simple \
+    -r requirements-backend.txt
 COPY . .
-
-# 创建数据目录
 RUN mkdir -p data/pdfs data/chroma docs/screenshots
-
-# 暴露端口
-# 8000: FastAPI 后端
-# 8501: Streamlit 前端
-EXPOSE 8000 8501
-
-# 默认启动命令（docker-compose 中会分别覆盖 backend 和 frontend 的 command）
-# 后端启动：python -m app.api.main
-# 前端启动：streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0
+EXPOSE 8000
 CMD ["python", "-m", "app.api.main"]

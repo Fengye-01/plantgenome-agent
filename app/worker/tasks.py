@@ -21,6 +21,25 @@ from app.rag.chunker import Chunker
 from app.rag.vector_store import VectorStore
 
 
+def _chunk_content(chunk: dict) -> str:
+    """Normalize the Chunker output while retaining legacy compatibility."""
+    return str(chunk.get("text") or chunk.get("content") or "")
+
+
+def _chunk_page_number(chunk: dict) -> int | None:
+    metadata = chunk.get("metadata") or {}
+    return metadata.get("page_start") or chunk.get("page_num")
+
+
+def _chunk_section(chunk: dict) -> str | None:
+    heading_path = (chunk.get("metadata") or {}).get("heading_path")
+    if isinstance(heading_path, list):
+        heading_path = " > ".join(str(item) for item in heading_path)
+    if not heading_path:
+        return None
+    return str(heading_path)[:500]
+
+
 def _ingest_pdf_to_db(
     document_id: int,
     user_id: int,
@@ -98,8 +117,8 @@ def _ingest_pdf_to_db(
         meta["user_id"] = user_id
         chunks_for_vectordb.append({
             "chunk_id": f"doc{document_id}_chunk{i}",
-            "text": chunk.get("content", ""),
-            "page_num": meta.get("page_start", 1),
+            "text": _chunk_content(chunk),
+            "page_num": _chunk_page_number(chunk) or 1,
             "chunk_index": i,
             "metadata": meta,
         })
@@ -108,29 +127,35 @@ def _ingest_pdf_to_db(
 
     # 5. 保存 DocumentChunk 记录（先清除旧记录，保证幂等）
     print(f"[Ingest] 步骤 5/5: 保存元数据")
-    db.query(DocumentChunk).filter(DocumentChunk.document_id == document_id).delete()
-    for i, (chunk, chroma_id) in enumerate(zip(chunks, added_ids)):
-        doc_chunk = DocumentChunk(
-            document_id=document_id,
-            chunk_index=i,
-            content=chunk.get("content", ""),
-            page_start=chunk.get("metadata", {}).get("page_start"),
-            page_end=chunk.get("metadata", {}).get("page_end"),
-            section=chunk.get("metadata", {}).get("heading_path"),
-            chroma_id=chroma_id,
-        )
-        db.add(doc_chunk)
+    try:
+        db.query(DocumentChunk).filter(DocumentChunk.document_id == document_id).delete()
+        for i, (chunk, chroma_id) in enumerate(zip(chunks, added_ids)):
+            page_number = _chunk_page_number(chunk)
+            doc_chunk = DocumentChunk(
+                document_id=document_id,
+                chunk_index=i,
+                content=_chunk_content(chunk),
+                page_start=page_number,
+                page_end=(chunk.get("metadata") or {}).get("page_end") or page_number,
+                section=_chunk_section(chunk),
+                chroma_id=chroma_id,
+            )
+            db.add(doc_chunk)
 
-    # 更新文档状态
-    document.status = "completed"
-    document.chunk_count = len(chunks)
-    document.processed_at = datetime.utcnow()
-    document.error_message = None
+        # 更新文档状态
+        document.status = "completed"
+        document.chunk_count = len(chunks)
+        document.processed_at = datetime.utcnow()
+        document.error_message = None
 
-    if task:
-        task.progress = 100
+        if task:
+            task.progress = 100
 
-    db.commit()
+        db.commit()
+    except Exception:
+        db.rollback()
+        vector_store.delete_documents(added_ids)
+        raise
     print(f"[Ingest] ✅ 完成: {document.filename}, {len(chunks)} chunks")
 
     return len(chunks), len(pages)
@@ -203,12 +228,16 @@ async def process_pdf_document(
 
         except Exception as e:
             print(f"[Worker] ❌ PDF 处理失败: {str(e)}")
-            document.status = "failed"
-            document.error_message = str(e)[:500]
-            if task:
-                task.status = "failed"
-                task.error_message = str(e)[:500]
-                task.completed_at = datetime.utcnow()
+            db.rollback()
+            failed_document = db.query(Document).filter(Document.id == document_id).first()
+            failed_task = db.query(Task).filter(Task.id == task_id).first()
+            if failed_document:
+                failed_document.status = "failed"
+                failed_document.error_message = str(e)[:500]
+            if failed_task:
+                failed_task.status = "failed"
+                failed_task.error_message = str(e)[:500]
+                failed_task.completed_at = datetime.utcnow()
             db.commit()
             raise
 
@@ -299,6 +328,8 @@ async def process_pubmed_search(
                 )
                 db.add(document)
                 db.flush()
+                document_id = document.id
+                db.commit()
 
                 # 入库
                 try:
@@ -318,8 +349,13 @@ async def process_pubmed_search(
                           f"PMID={article.get('pmid')}, {chunk_count} chunks")
                 except Exception as e:
                     failed_count += 1
-                    document.status = "failed"
-                    document.error_message = str(e)[:500]
+                    db.rollback()
+                    failed_document = (
+                        db.query(Document).filter(Document.id == document_id).first()
+                    )
+                    if failed_document:
+                        failed_document.status = "failed"
+                        failed_document.error_message = str(e)[:500]
                     db.commit()
                     article_results.append({
                         "pmid": article.get("pmid"),
@@ -364,9 +400,11 @@ async def process_pubmed_search(
 
         except Exception as e:
             print(f"[Worker] ❌ PubMed 检索任务失败: {str(e)}")
-            if task:
-                task.status = "failed"
-                task.error_message = str(e)[:500]
-                task.completed_at = datetime.utcnow()
+            db.rollback()
+            failed_task = db.query(Task).filter(Task.id == task_id).first()
+            if failed_task:
+                failed_task.status = "failed"
+                failed_task.error_message = str(e)[:500]
+                failed_task.completed_at = datetime.utcnow()
             db.commit()
             raise

@@ -59,7 +59,9 @@ services:
   # FastAPI 后端
   # ─────────────────────────────────────────────────────────
   backend:
-    build: .
+    build:
+      context: .
+      target: backend
     container_name: plantgenome-backend
     restart: unless-stopped
     ports:
@@ -74,6 +76,7 @@ services:
       - HF_ENDPOINT=${HF_ENDPOINT:-https://hf-mirror.com}
     volumes:
       - ./data:/app/data
+      - huggingface_cache:/root/.cache/huggingface
     depends_on:
       postgres:
         condition: service_healthy
@@ -85,7 +88,9 @@ services:
   # ARQ Worker（异步任务处理）
   # ─────────────────────────────────────────────────────────
   worker:
-    build: .
+    build:
+      context: .
+      target: backend
     container_name: plantgenome-worker
     restart: unless-stopped
     environment:
@@ -97,6 +102,7 @@ services:
       - HF_ENDPOINT=${HF_ENDPOINT:-https://hf-mirror.com}
     volumes:
       - ./data:/app/data
+      - huggingface_cache:/root/.cache/huggingface
     depends_on:
       postgres:
         condition: service_healthy
@@ -108,7 +114,9 @@ services:
   # Streamlit 前端
   # ─────────────────────────────────────────────────────────
   frontend:
-    build: .
+    build:
+      context: .
+      target: frontend
     container_name: plantgenome-frontend
     restart: unless-stopped
     ports:
@@ -133,3 +141,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  huggingface_cache:

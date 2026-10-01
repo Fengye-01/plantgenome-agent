@@ -66,6 +66,7 @@ class AgentState(TypedDict):
     - intent: 路由分类结果（6 类意图之一）
     - tool_name: 选中的工具名（router_node 决定）
     - tool_input: 工具输入参数（router_node 提取）
+    - tool_validation_error: 工具参数校验错误；存在时不会进入 tool_node
     - tool_result: 工具执行结果（tool_node 产出，最近一次）
     - tool_history: 工具调用历史（多工具链式调用时，记录所有已调用的工具和结果）
     - iteration: 当前迭代次数（多工具链式调用的循环计数，达到上限后强制结束）
@@ -80,6 +81,7 @@ class AgentState(TypedDict):
     intent: Optional[str]                          # 路由分类结果
     tool_name: Optional[str]                       # 选中的工具名
     tool_input: Optional[Dict[str, Any]]           # 工具输入参数
+    tool_validation_error: Optional[List[Dict[str, Any]]]  # 工具参数校验错误
     tool_result: Optional[Any]                     # 工具执行结果（最近一次）
     tool_history: List[Dict[str, Any]]             # 工具调用历史（多工具链式调用）
     iteration: int                                 # 当前迭代次数
@@ -117,6 +119,7 @@ def create_initial_state(
         "intent": None,
         "tool_name": None,
         "tool_input": None,
+        "tool_validation_error": None,
         "tool_result": None,
         "tool_history": [],
         "iteration": 0,

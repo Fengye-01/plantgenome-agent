@@ -218,6 +218,16 @@ class VectorStore:
         """返回集合中的文档数量。"""
         return self.collection.count()
 
+    def delete_documents(self, document_ids: List[str]) -> None:
+        """删除指定向量记录，用于补偿数据库落库失败。"""
+        if not document_ids:
+            return
+        _retry_on_lock(
+            lambda: self.collection.delete(ids=[str(item) for item in document_ids]),
+            max_retries=3,
+            base_delay=1.0,
+        )
+
     def clear(self) -> None:
         """清空集合中的所有文档（用于重新入库）。"""
         # 删除并重新创建集合

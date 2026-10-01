@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.core.config import get_settings
 from app.core.database import get_db
-from app.models import Document, Task, User
+from app.models import Document, DocumentChunk, Task, User
 from app.schemas.document import DocumentResponse, DocumentUploadResponse, PubMedSearchRequest, PubMedSearchResponse
 
 settings = get_settings()
@@ -187,12 +187,13 @@ def delete_document(
 
     # 从 Chroma 删除向量
     try:
-        from app.rag.vector_store import VectorStore
-        vector_store = VectorStore()
         chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id == document_id).all()
         chroma_ids = [c.chroma_id for c in chunks if c.chroma_id]
         if chroma_ids:
-            vector_store.delete_by_ids(chroma_ids)
+            from app.rag.vector_store import VectorStore
+
+            vector_store = VectorStore()
+            vector_store.delete_documents(chroma_ids)
     except Exception:
         pass
 

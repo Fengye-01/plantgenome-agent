@@ -25,12 +25,14 @@ streamlit>=1.30
 
 # PDF Parsing
 pymupdf>=1.24
+pymupdf4llm==0.0.17
 
 # PDF Generation (for PubMed abstract fallback)
 fpdf2>=2.7
 
 # Data Validation
 pydantic>=2.5
+email-validator>=2.1
 python-dotenv>=1.0
 
 # HTTP Client

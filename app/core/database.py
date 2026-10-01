@@ -30,12 +30,12 @@ class Base(DeclarativeBase):
 
 
 # 数据库连接 URL
-# 格式: postgresql+psycopg://user:password@host:port/dbname
-# 使用 psycopg v3（而非 psycopg2），解决 Windows 中文系统编码问题
+# 格式: postgresql+psycopg2://user:password@host:port/dbname
+# requirements.txt 已声明 psycopg2-binary，本地与容器统一使用该驱动。
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+psycopg://plantgenome:plantgenome@localhost:5432/plantgenome"
-).replace("postgresql+psycopg2://", "postgresql+psycopg://")
+    "postgresql+psycopg2://plantgenome:plantgenome@localhost:5432/plantgenome",
+)
 
 # 创建数据库引擎
 # - pool_pre_ping: 连接前先 ping，避免使用已断开的连接

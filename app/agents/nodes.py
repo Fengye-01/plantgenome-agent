@@ -22,6 +22,7 @@ from app.agents.state import (
     INTENT_TO_TOOL,
     INTENT_DIRECT_ANSWER,
 )
+from app.agents.tool_schemas import validate_tool_input
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -64,6 +65,7 @@ ROUTER_PROMPT = """你是一个专业的生物信息学任务路由分类器。
 【输出要求】
 严格输出 JSON 格式，不要输出任何其他文字、解释或 markdown 代码块。
 JSON 中每个字段之间必须用逗号分隔，括号必须配对。
+参数对象字段名必须是 tool_input，不得使用 arguments 或其他字段名替代。
 
 JSON 格式：
 {{"intent": "任务类型", "tool_name": "工具名或null", "tool_input": {{参数对象}}}}
@@ -320,6 +322,24 @@ def router_node(state: AgentState) -> AgentState:
     intent = parsed["intent"]
     tool_name = parsed["tool_name"]
     tool_input = parsed["tool_input"]
+    requested_tool_name = tool_name
+    validation_errors = []
+
+    # Router 输出只是候选调用。先由代码补全可确定提取的参数和认证态，
+    # 再用工具专属 Schema 校验；失败时不允许条件边进入 Tool 节点。
+    if tool_name:
+        tool_input = _prepare_tool_input(tool_name, tool_input, query, state.get("user_id"))
+        validated_input, validation_errors = validate_tool_input(tool_name, tool_input)
+        if validation_errors:
+            state["tool_result"] = {
+                "error": "工具参数校验失败",
+                "error_type": "tool_validation_error",
+                "tool": tool_name,
+                "details": validation_errors,
+            }
+            tool_name = None
+        else:
+            tool_input = validated_input or {}
 
     # 防止重复调用同一个工具（多工具链式调用的保护机制）
     # 按"工具名+参数"去重，允许同一工具不同参数多次调用（如先查PAML再查MAFFT）
@@ -340,7 +360,12 @@ def router_node(state: AgentState) -> AgentState:
         "node": "router",
         "intent": intent,
         "tool_name": tool_name,
+        "requested_tool_name": requested_tool_name,
         "tool_input": tool_input,
+        "validation_status": (
+            "failed" if validation_errors else "success" if requested_tool_name else "not_applicable"
+        ),
+        "validation_errors": validation_errors,
         "iteration": iteration,
         "raw_response": response[:500],  # 只保存前 500 字符，避免日志过大
     }
@@ -351,6 +376,8 @@ def router_node(state: AgentState) -> AgentState:
         "intent": intent,
         "tool_name": tool_name,
         "tool_input": tool_input,
+        "tool_validation_error": validation_errors or None,
+        "tool_result": state.get("tool_result"),
         "iteration": iteration,
         "execution_log": state["execution_log"],
     }
@@ -415,6 +442,34 @@ def _extract_dna_sequence_from_query(query: str) -> str:
     return ""
 
 
+def _prepare_tool_input(
+    tool_name: str,
+    raw_input: Any,
+    query: str,
+    user_id: int | None,
+) -> Dict[str, Any]:
+    """Prepare deterministic inputs before Pydantic validation."""
+    tool_input = dict(raw_input) if isinstance(raw_input, dict) else {}
+
+    if tool_name == "parse_fasta_stats":
+        fasta_text = _extract_fasta_from_query(query)
+        if fasta_text:
+            tool_input["fasta_text"] = fasta_text
+
+    if tool_name == "scan_cpg_islands" and not tool_input.get("sequence"):
+        sequence = _extract_dna_sequence_from_query(query)
+        if sequence:
+            tool_input["sequence"] = sequence
+
+    if tool_name == "search_pdf_knowledge":
+        # user_id 只能来自 JWT 认证态，永远不信任模型输出。
+        tool_input.pop("user_id", None)
+        if user_id is not None:
+            tool_input["user_id"] = user_id
+
+    return tool_input
+
+
 def tool_node(state: AgentState) -> AgentState:
     """
     工具调用节点：执行 router 选中的工具，处理参数和异常，记录调用日志。
@@ -468,29 +523,45 @@ def tool_node(state: AgentState) -> AgentState:
         })
         return state
 
-    # 情况 3：兜底参数提取
-    # FASTA 统计工具：优先用从 query 中兜底提取的完整序列（router 提取的经常不准确）
-    if tool_name == "parse_fasta_stats":
-        fasta_text = _extract_fasta_from_query(query)
-        if fasta_text:
-            # 从 query 中提取到了完整的 FASTA，优先使用
-            tool_input["fasta_text"] = fasta_text
-        elif "fasta_text" not in tool_input:
-            # 没提取到且 tool_input 里也没有，保持原样（工具会返回错误）
-            pass
+    # 情况 3：确定性参数补全 + Schema 校验。这里是防御性校验，确保即使
+    # 调用方绕过 Router 直接调用 tool_node，也不能执行未验证参数。
+    tool_input = _prepare_tool_input(tool_name, tool_input, query, state.get("user_id"))
+    validated_input, validation_errors = validate_tool_input(tool_name, tool_input)
+    if validation_errors:
+        error_msg = "工具参数校验失败"
+        state["tool_validation_error"] = validation_errors
+        state["tool_result"] = {
+            "error": error_msg,
+            "error_type": "tool_validation_error",
+            "tool": tool_name,
+            "details": validation_errors,
+        }
+        state["execution_log"].append({
+            "node": "tool",
+            "tool": tool_name,
+            "input_keys": list(tool_input.keys()),
+            "error": error_msg,
+            "validation_errors": validation_errors,
+            "latency": 0,
+            "status": "validation_failed",
+        })
+        state.setdefault("tool_history", []).append({
+            "tool": tool_name,
+            "tool_input": tool_input,
+            "status": "validation_failed",
+            "error": error_msg,
+            "validation_errors": validation_errors,
+            "latency": 0,
+        })
+        return {
+            "tool_result": state["tool_result"],
+            "tool_history": state["tool_history"],
+            "tool_validation_error": validation_errors,
+            "execution_log": state["execution_log"],
+        }
 
-    # CpG 岛扫描工具：如果 sequence 缺失，从 query 中提取
-    if tool_name == "scan_cpg_islands" and "sequence" not in tool_input:
-        sequence = _extract_dna_sequence_from_query(query)
-        if sequence:
-            tool_input["sequence"] = sequence
-
-    # 用户身份注入（数据隔离）：
-    # user_id 来自 state（源头是 JWT 认证），由代码强制注入检索工具，
-    # 不使用 LLM 在 tool_input 中输出的任何 user_id（防止 prompt 注入越权）。
-    user_id = state.get("user_id")
-    if tool_name == "search_pdf_knowledge" and user_id is not None:
-        tool_input["user_id"] = user_id
+    tool_input = validated_input or {}
+    state["tool_validation_error"] = None
 
     # 情况 4：执行工具（try-except）
     start_time = time.time()
@@ -542,6 +613,7 @@ def tool_node(state: AgentState) -> AgentState:
     return {
         "tool_result": state["tool_result"],
         "tool_history": state.get("tool_history", []),
+        "tool_validation_error": state.get("tool_validation_error"),
         "execution_log": state["execution_log"],
     }
 
@@ -576,6 +648,11 @@ ANSWER_PROMPT = """你是植物基因组学研究助手。根据工具执行结�
 
 【你的回答】
 """
+
+INSUFFICIENT_EVIDENCE_ANSWER = (
+    "当前知识库中没有检索到足够相关的文献证据，无法基于现有资料可靠回答。"
+    "你可以补充相关文献，或调整问题中的基因、物种和分析方法等关键词后重试。"
+)
 
 
 def _format_tool_result(tool_result: Any, intent: str) -> str:
@@ -766,6 +843,28 @@ def answer_node(state: AgentState) -> AgentState:
         extracted = tool_result.get("sources", [])
         if extracted:
             sources = extracted
+
+    # 文献检索没有通过确定性证据门控时，不调用 LLM，避免模型依靠参数知识补答。
+    if (
+        isinstance(tool_result, dict)
+        and tool_result.get("has_result") is False
+        and "context" in tool_result
+        and "sources" in tool_result
+    ):
+        state["execution_log"].append({
+            "node": "answer",
+            "intent": intent,
+            "answer_length": len(INSUFFICIENT_EVIDENCE_ANSWER),
+            "latency": 0,
+            "status": "abstained",
+            "reason": tool_result.get("evidence_reason", "insufficient_evidence"),
+            "error": None,
+        })
+        return {
+            "final_answer": INSUFFICIENT_EVIDENCE_ANSWER,
+            "sources": [],
+            "execution_log": state["execution_log"],
+        }
 
     # 格式化工具结果和来源
     tool_result_str = _format_tool_result(tool_result, intent)

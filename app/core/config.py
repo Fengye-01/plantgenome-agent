@@ -32,6 +32,7 @@ class Settings:
     chunk_size: int = int(os.getenv("CHUNK_SIZE", "600"))
     chunk_overlap: int = int(os.getenv("CHUNK_OVERLAP", "50"))
     retrieve_top_k: int = int(os.getenv("RETRIEVE_TOP_K", "3"))
+    rag_max_distance: float = float(os.getenv("RAG_MAX_DISTANCE", "0.8"))
 
     # ── 数据库配置 ──
     database_url: str = os.getenv(

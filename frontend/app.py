@@ -14,6 +14,7 @@ PlantGenome Agent - Streamlit 前端 v2.0
 """
 from __future__ import annotations
 
+import os
 import sys
 import time
 from pathlib import Path
@@ -26,8 +27,8 @@ import requests
 import streamlit as st
 import pandas as pd
 
-# API 基础地址
-API_BASE_URL = "http://localhost:8001"
+# Docker Compose 会传入容器内的后端地址；本地启动时使用 8001。
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8001").rstrip("/")
 
 # ═══════════════════════════════════════════════════════════
 # 页面配置
@@ -57,6 +58,9 @@ if "messages" not in st.session_state:
 
 if "sessions" not in st.session_state:
     st.session_state.sessions = []
+
+if "document_delete_confirm_id" not in st.session_state:
+    st.session_state.document_delete_confirm_id = None
 
 
 # ═══════════════════════════════════════════════════════════
@@ -172,6 +176,34 @@ def api_get_task(task_id: int):
         return None, resp.json().get("detail", "查询失败")
     except Exception as e:
         return None, f"连接服务器失败: {str(e)}"
+
+
+def api_get_documents():
+    """获取当前用户的知识库文档。"""
+    try:
+        resp = requests.get(
+            f"{API_BASE_URL}/api/documents",
+            headers=get_headers(),
+        )
+        if resp.status_code == 200:
+            return resp.json(), None
+        return [], resp.json().get("detail", "获取文档失败")
+    except Exception as e:
+        return [], f"连接服务器失败: {str(e)}"
+
+
+def api_delete_document(document_id: int):
+    """删除当前用户的一篇知识库文档。"""
+    try:
+        resp = requests.delete(
+            f"{API_BASE_URL}/api/documents/{document_id}",
+            headers=get_headers(),
+        )
+        if resp.status_code == 204:
+            return True, None
+        return False, resp.json().get("detail", "删除文档失败")
+    except Exception as e:
+        return False, f"连接服务器失败: {str(e)}"
 
 
 def api_pubmed_search(keyword: str, max_results: int = 5):
@@ -339,6 +371,90 @@ def display_sources(sources: list):
                 st.divider()
 
 
+def format_file_size(size: int) -> str:
+    """将字节数格式化为适合目录展示的大小。"""
+    if size < 1024:
+        return f"{size} B"
+    if size < 1024 * 1024:
+        return f"{size / 1024:.1f} KB"
+    return f"{size / (1024 * 1024):.1f} MB"
+
+
+def display_document_library():
+    """在侧边栏展示当前用户的知识库文档。"""
+    title_col, refresh_col = st.columns([4, 1])
+    with title_col:
+        st.header("📚 我的知识库")
+    with refresh_col:
+        if st.button("↻", key="refresh_documents", help="刷新文档列表"):
+            st.rerun()
+
+    documents, error = api_get_documents()
+    if error:
+        st.error(error)
+        return
+    if not documents:
+        st.caption("尚未上传文档")
+        return
+
+    status_labels = {
+        "pending": ("⏳", "等待处理"),
+        "running": ("🔄", "处理中"),
+        "completed": ("✅", "已完成"),
+        "failed": ("❌", "处理失败"),
+    }
+
+    for document in documents:
+        document_id = document["id"]
+        status_icon, status_text = status_labels.get(
+            document.get("status"),
+            ("•", document.get("status", "未知")),
+        )
+        filename = document.get("filename", "未命名文档")
+        with st.expander(f"{status_icon} {filename}", expanded=False):
+            st.caption(
+                f"{status_text} · {format_file_size(document.get('file_size', 0))} · "
+                f"{document.get('chunk_count', 0)} chunks"
+            )
+            created_at = document.get("created_at")
+            if created_at:
+                st.caption(f"上传时间：{created_at[:16].replace('T', ' ')}")
+            if document.get("error_message"):
+                st.error(document["error_message"])
+
+            if st.session_state.document_delete_confirm_id == document_id:
+                st.warning("删除后将同时移除原文件、分块记录和向量，无法恢复。")
+                confirm_col, cancel_col = st.columns(2)
+                with confirm_col:
+                    if st.button(
+                        "确认删除",
+                        key=f"confirm_delete_document_{document_id}",
+                        type="primary",
+                        use_container_width=True,
+                    ):
+                        success, delete_error = api_delete_document(document_id)
+                        if success:
+                            st.session_state.document_delete_confirm_id = None
+                            st.toast("文档已删除")
+                            st.rerun()
+                        st.error(delete_error)
+                with cancel_col:
+                    if st.button(
+                        "取消",
+                        key=f"cancel_delete_document_{document_id}",
+                        use_container_width=True,
+                    ):
+                        st.session_state.document_delete_confirm_id = None
+                        st.rerun()
+            elif st.button(
+                "删除文档",
+                key=f"delete_document_{document_id}",
+                use_container_width=True,
+            ):
+                st.session_state.document_delete_confirm_id = document_id
+                st.rerun()
+
+
 # ═══════════════════════════════════════════════════════════
 # 主应用
 # ═══════════════════════════════════════════════════════════
@@ -423,6 +539,9 @@ def show_main_app():
                             st.error(f"❌ 处理失败: {task.get('error_message', '未知错误')}")
                     else:
                         st.error(f"上传失败: {error}")
+
+        st.divider()
+        display_document_library()
 
         st.divider()
         st.header("🔍 PubMed 文献检索")
