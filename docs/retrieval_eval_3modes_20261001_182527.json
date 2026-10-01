@@ -1,0 +1,1041 @@
+{
+  "generated_at": "2026-10-01T18:25:27.806278",
+  "eval_dir": "C:\\Users\\YeFeng\\AppData\\Local\\Temp\\pg_eval_n8xgx2sv",
+  "ingested_documents": [
+    {
+      "short": "PAML",
+      "document_id": 1,
+      "filename": "Yang - 2007 - PAML 4 Phylogenetic analysis by maximum likelihood.pdf"
+    },
+    {
+      "short": "OrthoFinder",
+      "document_id": 2,
+      "filename": "Emms和Kelly - 2019 - OrthoFinder Phylogenetic orthology inference for comparative genomics.pdf"
+    },
+    {
+      "short": "MAFFT",
+      "document_id": 3,
+      "filename": "Katoh和Standley - 2013 - MAFFT multiple sequence alignment software version 7 Improvements in performance and usability.pdf"
+    },
+    {
+      "short": "Research Progress",
+      "document_id": 4,
+      "filename": "Research Progress in the Molecular Functions of Plant.pdf"
+    },
+    {
+      "short": "Bock",
+      "document_id": 5,
+      "filename": "1_1789188147_Bock_2007_CpG island mapping by epigenome prediction.pdf"
+    },
+    {
+      "short": "Ashikawa",
+      "document_id": 6,
+      "filename": "Ashikawa - 2001 - Gene-associated CpG islands in plants as revealed by analyses of genomic sequences.pdf"
+    },
+    {
+      "short": "Cain",
+      "document_id": 7,
+      "filename": "1_1789201769_Cain_2022_Intragenic CpG islands and their impact on gene regulation.pdf"
+    },
+    {
+      "short": "DeepCpG",
+      "document_id": 8,
+      "filename": "1_1789164331_Angermueller_2017_DeepCpG_ Accurate prediction of single-cell DNA methylation states using deep learning.pdf"
+    },
+    {
+      "short": "IQ-TREE",
+      "document_id": 9,
+      "filename": "Minh 等 - 2020 - IQ-TREE 2 New models and efficient methods for phylogenetic inference in the genomic era.pdf"
+    },
+    {
+      "short": "ModelFinder",
+      "document_id": 10,
+      "filename": "Kalyaanamoorthy 等 - 2017 - ModelFinder Fast model selection for accurate phylogenetic estimates.pdf"
+    },
+    {
+      "short": "Epigenetic",
+      "document_id": 11,
+      "filename": "Epigenetic Regulation in Plants.pdf"
+    },
+    {
+      "short": "Pfam",
+      "document_id": 12,
+      "filename": "Mistry 等 - 2021 - Pfam The protein families database in 2021.pdf"
+    }
+  ],
+  "gold_source": "docs/rag_gold_v2.json (answerable only)",
+  "note": "隔离临时环境重新入库语料；历史 data/chroma 447 条未参与。",
+  "modes": {
+    "dense_only": {
+      "n": 18,
+      "hits": 17,
+      "HitRate@1": 0.7778,
+      "HitRate@3": 0.9444,
+      "HitRate@5": 0.9444,
+      "MRR": 0.8426,
+      "avg_latency_ms": 174.6,
+      "cold_build_ms": null,
+      "hot_avg_ms": null,
+      "degrade_count": 0,
+      "avg_dense_recall": null,
+      "avg_sparse_recall": null,
+      "cases": [
+        {
+          "query_id": 1,
+          "query": "PAML 中的 omega (dN/dS) 值怎么解释？",
+          "rank": 1,
+          "relevant_docs": [
+            "PAML"
+          ],
+          "top5_files": [
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur",
+            "Research Progress in the Molecular Functions ",
+            "Epigenetic Regulation in Plants.pdf"
+          ]
+        },
+        {
+          "query_id": 2,
+          "query": "OrthoFinder 的输入需要什么格式？",
+          "rank": 1,
+          "relevant_docs": [
+            "OrthoFinder"
+          ],
+          "top5_files": [
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic "
+          ]
+        },
+        {
+          "query_id": 3,
+          "query": "MAFFT 的 L-INS-i 和 G-INS-i 有什么区别？",
+          "rank": 1,
+          "relevant_docs": [
+            "MAFFT"
+          ],
+          "top5_files": [
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Research Progress in the Molecular Functions "
+          ]
+        },
+        {
+          "query_id": 4,
+          "query": "mTERF 基因家族在植物中的功能是什么？",
+          "rank": 1,
+          "relevant_docs": [
+            "Research Progress"
+          ],
+          "top5_files": [
+            "Research Progress in the Molecular Functions ",
+            "Research Progress in the Molecular Functions ",
+            "Research Progress in the Molecular Functions ",
+            "Research Progress in the Molecular Functions ",
+            "Research Progress in the Molecular Functions "
+          ]
+        },
+        {
+          "query_id": 5,
+          "query": "什么是 CpG 岛？它的定义标准是什么？",
+          "rank": 1,
+          "relevant_docs": [
+            "Bock",
+            "Ashikawa",
+            "Cain",
+            "DeepCpG"
+          ],
+          "top5_files": [
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by "
+          ]
+        },
+        {
+          "query_id": 6,
+          "query": "PAML codeml 的分支模型和位点模型有什么区别？",
+          "rank": 1,
+          "relevant_docs": [
+            "PAML"
+          ],
+          "top5_files": [
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur"
+          ]
+        },
+        {
+          "query_id": 7,
+          "query": "怎么做基因家族的系统发育分析？",
+          "rank": 3,
+          "relevant_docs": [
+            "IQ-TREE",
+            "OrthoFinder",
+            "MAFFT",
+            "ModelFinder"
+          ],
+          "top5_files": [
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "Mistry 等 - 2021 - Pfam The protein families d",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by "
+          ]
+        },
+        {
+          "query_id": 8,
+          "query": "DNA 甲基化和 CpG 岛有什么关系？",
+          "rank": 1,
+          "relevant_docs": [
+            "Bock",
+            "Cain",
+            "DeepCpG",
+            "Epigenetic"
+          ],
+          "top5_files": [
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by "
+          ]
+        },
+        {
+          "query_id": 9,
+          "query": "OrthoFinder 输出结果怎么解读？",
+          "rank": 1,
+          "relevant_docs": [
+            "OrthoFinder"
+          ],
+          "top5_files": [
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic "
+          ]
+        },
+        {
+          "query_id": 10,
+          "query": "比较基因组学主要分析哪些内容？",
+          "rank": 1,
+          "relevant_docs": [
+            "OrthoFinder"
+          ],
+          "top5_files": [
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Epigenetic Regulation in Plants.pdf",
+            "Epigenetic Regulation in Plants.pdf"
+          ]
+        },
+        {
+          "query_id": 12,
+          "query": "IQ-TREE 和 RAxML 在构建进化树时有什么优劣？",
+          "rank": 1,
+          "relevant_docs": [
+            "IQ-TREE"
+          ],
+          "top5_files": [
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi"
+          ]
+        },
+        {
+          "query_id": 18,
+          "query": "什么是正向选择和纯化选择？怎么检测？",
+          "rank": null,
+          "relevant_docs": [
+            "PAML"
+          ],
+          "top5_files": [
+            "Ashikawa - 2001 - Gene-associated CpG islands",
+            "Ashikawa - 2001 - Gene-associated CpG islands",
+            "Ashikawa - 2001 - Gene-associated CpG islands",
+            "Ashikawa - 2001 - Gene-associated CpG islands",
+            "Ashikawa - 2001 - Gene-associated CpG islands"
+          ]
+        },
+        {
+          "query_id": 21,
+          "query": "ClustalW 和 MAFFT 相比有什么区别？",
+          "rank": 1,
+          "relevant_docs": [
+            "MAFFT"
+          ],
+          "top5_files": [
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen"
+          ]
+        },
+        {
+          "query_id": 24,
+          "query": "什么是 HMMER 中的 HMM 模型？怎么构建？",
+          "rank": 1,
+          "relevant_docs": [
+            "Pfam"
+          ],
+          "top5_files": [
+            "Mistry 等 - 2021 - Pfam The protein families d",
+            "Kalyaanamoorthy 等 - 2017 - ModelFinder Fast m",
+            "Kalyaanamoorthy 等 - 2017 - ModelFinder Fast m",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Kalyaanamoorthy 等 - 2017 - ModelFinder Fast m"
+          ]
+        },
+        {
+          "query_id": 25,
+          "query": "OrthoFinder 中的 Orthogroup 是什么意思？",
+          "rank": 1,
+          "relevant_docs": [
+            "OrthoFinder"
+          ],
+          "top5_files": [
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic "
+          ]
+        },
+        {
+          "query_id": 28,
+          "query": "BS-seq 是什么？怎么分析 DNA 甲基化？",
+          "rank": 2,
+          "relevant_docs": [
+            "DeepCpG",
+            "Bock",
+            "Cain"
+          ],
+          "top5_files": [
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur",
+            "Kalyaanamoorthy 等 - 2017 - ModelFinder Fast m",
+            "1_1789201769_Cain_2022_Intragenic CpG islands"
+          ]
+        },
+        {
+          "query_id": 33,
+          "query": "PAML 中的 branch-site model 用来检测什么？",
+          "rank": 1,
+          "relevant_docs": [
+            "PAML"
+          ],
+          "top5_files": [
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by"
+          ]
+        },
+        {
+          "query_id": 34,
+          "query": "多序列比对的 gap 怎么处理？对进化树有什么影响？",
+          "rank": 3,
+          "relevant_docs": [
+            "MAFFT",
+            "IQ-TREE"
+          ],
+          "top5_files": [
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic "
+          ]
+        }
+      ]
+    },
+    "candidate_rrf": {
+      "n": 18,
+      "hits": 17,
+      "HitRate@1": 0.8333,
+      "HitRate@3": 0.9444,
+      "HitRate@5": 0.9444,
+      "MRR": 0.8796,
+      "avg_latency_ms": 166.0,
+      "cold_build_ms": null,
+      "hot_avg_ms": null,
+      "degrade_count": 0,
+      "avg_dense_recall": null,
+      "avg_sparse_recall": null,
+      "cases": [
+        {
+          "query_id": 1,
+          "query": "PAML 中的 omega (dN/dS) 值怎么解释？",
+          "rank": 1,
+          "relevant_docs": [
+            "PAML"
+          ],
+          "top5_files": [
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur",
+            "Research Progress in the Molecular Functions ",
+            "Epigenetic Regulation in Plants.pdf"
+          ]
+        },
+        {
+          "query_id": 2,
+          "query": "OrthoFinder 的输入需要什么格式？",
+          "rank": 1,
+          "relevant_docs": [
+            "OrthoFinder"
+          ],
+          "top5_files": [
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic "
+          ]
+        },
+        {
+          "query_id": 3,
+          "query": "MAFFT 的 L-INS-i 和 G-INS-i 有什么区别？",
+          "rank": 1,
+          "relevant_docs": [
+            "MAFFT"
+          ],
+          "top5_files": [
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen"
+          ]
+        },
+        {
+          "query_id": 4,
+          "query": "mTERF 基因家族在植物中的功能是什么？",
+          "rank": 1,
+          "relevant_docs": [
+            "Research Progress"
+          ],
+          "top5_files": [
+            "Research Progress in the Molecular Functions ",
+            "Research Progress in the Molecular Functions ",
+            "Research Progress in the Molecular Functions ",
+            "Research Progress in the Molecular Functions ",
+            "Research Progress in the Molecular Functions "
+          ]
+        },
+        {
+          "query_id": 5,
+          "query": "什么是 CpG 岛？它的定义标准是什么？",
+          "rank": 1,
+          "relevant_docs": [
+            "Bock",
+            "Ashikawa",
+            "Cain",
+            "DeepCpG"
+          ],
+          "top5_files": [
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by "
+          ]
+        },
+        {
+          "query_id": 6,
+          "query": "PAML codeml 的分支模型和位点模型有什么区别？",
+          "rank": 1,
+          "relevant_docs": [
+            "PAML"
+          ],
+          "top5_files": [
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by"
+          ]
+        },
+        {
+          "query_id": 7,
+          "query": "怎么做基因家族的系统发育分析？",
+          "rank": 3,
+          "relevant_docs": [
+            "IQ-TREE",
+            "OrthoFinder",
+            "MAFFT",
+            "ModelFinder"
+          ],
+          "top5_files": [
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "Mistry 等 - 2021 - Pfam The protein families d",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by "
+          ]
+        },
+        {
+          "query_id": 8,
+          "query": "DNA 甲基化和 CpG 岛有什么关系？",
+          "rank": 1,
+          "relevant_docs": [
+            "Bock",
+            "Cain",
+            "DeepCpG",
+            "Epigenetic"
+          ],
+          "top5_files": [
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by "
+          ]
+        },
+        {
+          "query_id": 9,
+          "query": "OrthoFinder 输出结果怎么解读？",
+          "rank": 1,
+          "relevant_docs": [
+            "OrthoFinder"
+          ],
+          "top5_files": [
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic "
+          ]
+        },
+        {
+          "query_id": 10,
+          "query": "比较基因组学主要分析哪些内容？",
+          "rank": 1,
+          "relevant_docs": [
+            "OrthoFinder"
+          ],
+          "top5_files": [
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Epigenetic Regulation in Plants.pdf",
+            "Epigenetic Regulation in Plants.pdf"
+          ]
+        },
+        {
+          "query_id": 12,
+          "query": "IQ-TREE 和 RAxML 在构建进化树时有什么优劣？",
+          "rank": 1,
+          "relevant_docs": [
+            "IQ-TREE"
+          ],
+          "top5_files": [
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi"
+          ]
+        },
+        {
+          "query_id": 18,
+          "query": "什么是正向选择和纯化选择？怎么检测？",
+          "rank": null,
+          "relevant_docs": [
+            "PAML"
+          ],
+          "top5_files": [
+            "Ashikawa - 2001 - Gene-associated CpG islands",
+            "Ashikawa - 2001 - Gene-associated CpG islands",
+            "Ashikawa - 2001 - Gene-associated CpG islands",
+            "Ashikawa - 2001 - Gene-associated CpG islands",
+            "Ashikawa - 2001 - Gene-associated CpG islands"
+          ]
+        },
+        {
+          "query_id": 21,
+          "query": "ClustalW 和 MAFFT 相比有什么区别？",
+          "rank": 1,
+          "relevant_docs": [
+            "MAFFT"
+          ],
+          "top5_files": [
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen"
+          ]
+        },
+        {
+          "query_id": 24,
+          "query": "什么是 HMMER 中的 HMM 模型？怎么构建？",
+          "rank": 1,
+          "relevant_docs": [
+            "Pfam"
+          ],
+          "top5_files": [
+            "Mistry 等 - 2021 - Pfam The protein families d",
+            "Kalyaanamoorthy 等 - 2017 - ModelFinder Fast m",
+            "Kalyaanamoorthy 等 - 2017 - ModelFinder Fast m",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Kalyaanamoorthy 等 - 2017 - ModelFinder Fast m"
+          ]
+        },
+        {
+          "query_id": 25,
+          "query": "OrthoFinder 中的 Orthogroup 是什么意思？",
+          "rank": 1,
+          "relevant_docs": [
+            "OrthoFinder"
+          ],
+          "top5_files": [
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic "
+          ]
+        },
+        {
+          "query_id": 28,
+          "query": "BS-seq 是什么？怎么分析 DNA 甲基化？",
+          "rank": 1,
+          "relevant_docs": [
+            "DeepCpG",
+            "Bock",
+            "Cain"
+          ],
+          "top5_files": [
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur",
+            "1_1789201769_Cain_2022_Intragenic CpG islands"
+          ]
+        },
+        {
+          "query_id": 33,
+          "query": "PAML 中的 branch-site model 用来检测什么？",
+          "rank": 1,
+          "relevant_docs": [
+            "PAML"
+          ],
+          "top5_files": [
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by"
+          ]
+        },
+        {
+          "query_id": 34,
+          "query": "多序列比对的 gap 怎么处理？对进化树有什么影响？",
+          "rank": 2,
+          "relevant_docs": [
+            "MAFFT",
+            "IQ-TREE"
+          ],
+          "top5_files": [
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic "
+          ]
+        }
+      ]
+    },
+    "global_rrf": {
+      "n": 18,
+      "hits": 17,
+      "HitRate@1": 0.8889,
+      "HitRate@3": 0.9444,
+      "HitRate@5": 0.9444,
+      "MRR": 0.9074,
+      "avg_latency_ms": 165.7,
+      "cold_build_ms": 289.7,
+      "hot_avg_ms": 158.4,
+      "degrade_count": 0,
+      "avg_dense_recall": 20.0,
+      "avg_sparse_recall": 13.9,
+      "cases": [
+        {
+          "query_id": 1,
+          "query": "PAML 中的 omega (dN/dS) 值怎么解释？",
+          "rank": 1,
+          "relevant_docs": [
+            "PAML"
+          ],
+          "top5_files": [
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur"
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 14
+        },
+        {
+          "query_id": 2,
+          "query": "OrthoFinder 的输入需要什么格式？",
+          "rank": 1,
+          "relevant_docs": [
+            "OrthoFinder"
+          ],
+          "top5_files": [
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic "
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 20
+        },
+        {
+          "query_id": 3,
+          "query": "MAFFT 的 L-INS-i 和 G-INS-i 有什么区别？",
+          "rank": 1,
+          "relevant_docs": [
+            "MAFFT"
+          ],
+          "top5_files": [
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen"
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 20
+        },
+        {
+          "query_id": 4,
+          "query": "mTERF 基因家族在植物中的功能是什么？",
+          "rank": 1,
+          "relevant_docs": [
+            "Research Progress"
+          ],
+          "top5_files": [
+            "Research Progress in the Molecular Functions ",
+            "Research Progress in the Molecular Functions ",
+            "Research Progress in the Molecular Functions ",
+            "Research Progress in the Molecular Functions ",
+            "Research Progress in the Molecular Functions "
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 17
+        },
+        {
+          "query_id": 5,
+          "query": "什么是 CpG 岛？它的定义标准是什么？",
+          "rank": 1,
+          "relevant_docs": [
+            "Bock",
+            "Ashikawa",
+            "Cain",
+            "DeepCpG"
+          ],
+          "top5_files": [
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by "
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 20
+        },
+        {
+          "query_id": 6,
+          "query": "PAML codeml 的分支模型和位点模型有什么区别？",
+          "rank": 1,
+          "relevant_docs": [
+            "PAML"
+          ],
+          "top5_files": [
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by"
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 10
+        },
+        {
+          "query_id": 7,
+          "query": "怎么做基因家族的系统发育分析？",
+          "rank": 3,
+          "relevant_docs": [
+            "IQ-TREE",
+            "OrthoFinder",
+            "MAFFT",
+            "ModelFinder"
+          ],
+          "top5_files": [
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "Mistry 等 - 2021 - Pfam The protein families d",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by "
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 0
+        },
+        {
+          "query_id": 8,
+          "query": "DNA 甲基化和 CpG 岛有什么关系？",
+          "rank": 1,
+          "relevant_docs": [
+            "Bock",
+            "Cain",
+            "DeepCpG",
+            "Epigenetic"
+          ],
+          "top5_files": [
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789188147_Bock_2007_CpG island mapping by ",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur"
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 20
+        },
+        {
+          "query_id": 9,
+          "query": "OrthoFinder 输出结果怎么解读？",
+          "rank": 1,
+          "relevant_docs": [
+            "OrthoFinder"
+          ],
+          "top5_files": [
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic "
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 20
+        },
+        {
+          "query_id": 10,
+          "query": "比较基因组学主要分析哪些内容？",
+          "rank": 1,
+          "relevant_docs": [
+            "OrthoFinder"
+          ],
+          "top5_files": [
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Epigenetic Regulation in Plants.pdf",
+            "Epigenetic Regulation in Plants.pdf"
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 0
+        },
+        {
+          "query_id": 12,
+          "query": "IQ-TREE 和 RAxML 在构建进化树时有什么优劣？",
+          "rank": 1,
+          "relevant_docs": [
+            "IQ-TREE"
+          ],
+          "top5_files": [
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi",
+            "Minh 等 - 2020 - IQ-TREE 2 New models and effi"
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 20
+        },
+        {
+          "query_id": 18,
+          "query": "什么是正向选择和纯化选择？怎么检测？",
+          "rank": null,
+          "relevant_docs": [
+            "PAML"
+          ],
+          "top5_files": [
+            "Ashikawa - 2001 - Gene-associated CpG islands",
+            "Ashikawa - 2001 - Gene-associated CpG islands",
+            "Ashikawa - 2001 - Gene-associated CpG islands",
+            "Ashikawa - 2001 - Gene-associated CpG islands",
+            "Ashikawa - 2001 - Gene-associated CpG islands"
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 0
+        },
+        {
+          "query_id": 21,
+          "query": "ClustalW 和 MAFFT 相比有什么区别？",
+          "rank": 1,
+          "relevant_docs": [
+            "MAFFT"
+          ],
+          "top5_files": [
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen"
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 20
+        },
+        {
+          "query_id": 24,
+          "query": "什么是 HMMER 中的 HMM 模型？怎么构建？",
+          "rank": 1,
+          "relevant_docs": [
+            "Pfam"
+          ],
+          "top5_files": [
+            "Mistry 等 - 2021 - Pfam The protein families d",
+            "Mistry 等 - 2021 - Pfam The protein families d",
+            "Kalyaanamoorthy 等 - 2017 - ModelFinder Fast m",
+            "Mistry 等 - 2021 - Pfam The protein families d",
+            "Kalyaanamoorthy 等 - 2017 - ModelFinder Fast m"
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 4
+        },
+        {
+          "query_id": 25,
+          "query": "OrthoFinder 中的 Orthogroup 是什么意思？",
+          "rank": 1,
+          "relevant_docs": [
+            "OrthoFinder"
+          ],
+          "top5_files": [
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic ",
+            "Emms和Kelly - 2019 - OrthoFinder Phylogenetic "
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 20
+        },
+        {
+          "query_id": 28,
+          "query": "BS-seq 是什么？怎么分析 DNA 甲基化？",
+          "rank": 1,
+          "relevant_docs": [
+            "DeepCpG",
+            "Bock",
+            "Cain"
+          ],
+          "top5_files": [
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur",
+            "1_1789201769_Cain_2022_Intragenic CpG islands",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur"
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 20
+        },
+        {
+          "query_id": 33,
+          "query": "PAML 中的 branch-site model 用来检测什么？",
+          "rank": 1,
+          "relevant_docs": [
+            "PAML"
+          ],
+          "top5_files": [
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by"
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 20
+        },
+        {
+          "query_id": 34,
+          "query": "多序列比对的 gap 怎么处理？对进化树有什么影响？",
+          "rank": 1,
+          "relevant_docs": [
+            "MAFFT",
+            "IQ-TREE"
+          ],
+          "top5_files": [
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "Yang - 2007 - PAML 4 Phylogenetic analysis by",
+            "Katoh和Standley - 2013 - MAFFT multiple sequen",
+            "1_1789164331_Angermueller_2017_DeepCpG_ Accur",
+            "Epigenetic Regulation in Plants.pdf"
+          ],
+          "dense_recall_n": 20,
+          "sparse_recall_n": 5
+        }
+      ]
+    }
+  },
+  "case18": {
+    "query": "什么是正向选择和纯化选择？怎么检测？",
+    "dense_channel_paml": [
+      11,
+      0.5061852931976318,
+      "doc1_chunk5"
+    ],
+    "sparse_channel_paml": null,
+    "dense_top5_ids": [
+      "doc6_chunk0",
+      "doc6_chunk4",
+      "doc6_chunk7",
+      "doc6_chunk8",
+      "doc6_chunk9"
+    ],
+    "sparse_top5": [],
+    "dense_only_rank": null,
+    "dense_only_top5": [
+      "Ashikawa - 2001 - Gene-associated CpG is",
+      "Ashikawa - 2001 - Gene-associated CpG is",
+      "Ashikawa - 2001 - Gene-associated CpG is",
+      "Ashikawa - 2001 - Gene-associated CpG is",
+      "Ashikawa - 2001 - Gene-associated CpG is"
+    ],
+    "candidate_rrf_rank": null,
+    "candidate_rrf_top5": [
+      "Ashikawa - 2001 - Gene-associated CpG is",
+      "Ashikawa - 2001 - Gene-associated CpG is",
+      "Ashikawa - 2001 - Gene-associated CpG is",
+      "Ashikawa - 2001 - Gene-associated CpG is",
+      "Ashikawa - 2001 - Gene-associated CpG is"
+    ],
+    "global_rrf_rank": null,
+    "global_rrf_top5": [
+      "Ashikawa - 2001 - Gene-associated CpG is",
+      "Ashikawa - 2001 - Gene-associated CpG is",
+      "Ashikawa - 2001 - Gene-associated CpG is",
+      "Ashikawa - 2001 - Gene-associated CpG is",
+      "Ashikawa - 2001 - Gene-associated CpG is"
+    ]
+  }
+}
