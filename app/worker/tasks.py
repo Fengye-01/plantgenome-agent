@@ -15,6 +15,7 @@ from arq import Retry
 
 from app.core.database import get_session
 from app.models import Document, DocumentChunk, Task
+from app.rag.bm25_snapshot import bump_bm25_version
 from app.rag.pdf_parser import PDFParser
 from app.rag.text_cleaner import TextCleaner
 from app.rag.chunker import Chunker
@@ -219,6 +220,11 @@ async def process_pdf_document(
                 }
             db.commit()
 
+            # SQL 与 Chroma 均已确认成功，递增用户 BM25 版本，通知 API 进程重建快照
+            if bump_bm25_version(user_id) is None:
+                print("[Worker] ⚠️ BM25 版本递增失败（Redis 不可用），"
+                      "API 将在 TTL 后兜底重建")
+
             return {
                 "status": "completed",
                 "document_id": document_id,
@@ -337,6 +343,9 @@ async def process_pubmed_search(
                         document.id, user_id, db, task=None
                     )
                     success_count += 1
+                    # 该篇 SQL+Chroma 已成功，递增版本（多篇则递增多次，无副作用）
+                    if bump_bm25_version(user_id) is None:
+                        print("[Worker] ⚠️ BM25 版本递增失败（Redis 不可用）")
                     article_results.append({
                         "pmid": article.get("pmid"),
                         "title": article.get("title", "")[:100],

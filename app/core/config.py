@@ -34,6 +34,15 @@ class Settings:
     retrieve_top_k: int = int(os.getenv("RETRIEVE_TOP_K", "3"))
     rag_max_distance: float = float(os.getenv("RAG_MAX_DISTANCE", "0.8"))
 
+    # ── 检索模式与独立召回参数 ──
+    # dense_only：纯向量；candidate_rrf：Dense候选内BM25重排（当前线上默认）；
+    # global_rrf：用户全库 Dense / BM25 独立召回后 RRF
+    retrieval_mode: str = os.getenv("RETRIEVAL_MODE", "candidate_rrf")
+    dense_top_n: int = int(os.getenv("DENSE_TOP_N", "20"))
+    sparse_top_n: int = int(os.getenv("SPARSE_TOP_N", "20"))
+    rrf_k: int = int(os.getenv("RRF_K", "60"))
+    bm25_snapshot_ttl: int = int(os.getenv("BM25_SNAPSHOT_TTL", "300"))
+
     # ── 数据库配置 ──
     database_url: str = os.getenv(
         "DATABASE_URL",

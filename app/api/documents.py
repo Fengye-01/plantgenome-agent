@@ -205,6 +205,14 @@ def delete_document(
     db.delete(document)
     db.commit()
 
+    # 失效本进程 BM25 快照并递增版本，通知其他 API 进程重建
+    from app.rag.bm25_snapshot import get_snapshot_manager, bump_bm25_version
+
+    get_snapshot_manager().invalidate(current_user.id)
+    if bump_bm25_version(current_user.id) is None:
+        # Redis 版本通知失败不阻断删除，API 会在 TTL 后兜底重建
+        pass
+
     return None
 
 

@@ -9,11 +9,13 @@ from app.tools import search_pdf_knowledge as search_module
 def test_search_only_returns_current_users_documents(monkeypatch):
     records = [
         {
+            "chunk_id": "a_chunk",
             "text": "private content owned by user A",
             "metadata": {"user_id": 1, "filename": "user-a.pdf", "page_num": 1},
             "distance": 0.1,
         },
         {
+            "chunk_id": "b_chunk",
             "text": "private content owned by user B",
             "metadata": {"user_id": 2, "filename": "user-b.pdf", "page_num": 2},
             "distance": 0.2,
