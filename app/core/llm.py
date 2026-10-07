@@ -12,16 +12,21 @@ LLM 封装层：参考 Hello Agents 教程 chapter4/llm_client.py 的 HelloAgent
 - Hello Agents 教程全程用 openai 库，保持一致便于参考教程代码
 - openai 库处理了重试、超时、流式解析等细节，比自己写 httpx 更健壮
 """
+
 from __future__ import annotations
 
 import os
-from typing import AsyncGenerator, List, Dict, Optional
+from typing import AsyncGenerator, Dict, List, Optional
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
 # 加载项目根目录的 .env 文件
 load_dotenv()
+
+
+class LLMInvocationError(RuntimeError):
+    """Raised when the configured LLM service cannot produce a response."""
 
 
 class HelloAgentsLLM:
@@ -108,9 +113,15 @@ class HelloAgentsLLM:
         except Exception as e:
             if verbose:
                 print(f"❌ 调用 LLM API 时发生错误: {e}")
-            return None
+            raise LLMInvocationError("大语言模型服务调用失败") from e
 
-    def invoke(self, prompt: str, system: Optional[str] = None, temperature: float = 0.3, max_tokens: int = 2048) -> str:
+    def invoke(
+        self,
+        prompt: str,
+        system: Optional[str] = None,
+        temperature: float = 0.3,
+        max_tokens: int = 2048,
+    ) -> str:
         """
         同步调用，便捷接口。自动构建 messages，返回完整回答。
         这是对 think() 的封装，适合上层业务直接调用。
@@ -128,7 +139,13 @@ class HelloAgentsLLM:
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
-        return self.think(messages, temperature=temperature, max_tokens=max_tokens, stream=False, verbose=False)
+        return self.think(
+            messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=False,
+            verbose=False,
+        )
 
     async def stream(
         self,
@@ -193,7 +210,10 @@ if __name__ == "__main__":
     print("[测试 1] think() 方法 - 带 system prompt 的角色设定")
     print("-" * 40)
     messages = [
-        {"role": "system", "content": "你是一个植物基因组学研究助手，回答要专业、简洁，使用生物信息学术语。"},
+        {
+            "role": "system",
+            "content": "你是一个植物基因组学研究助手，回答要专业、简洁，使用生物信息学术语。",
+        },
         {"role": "user", "content": "什么是 CpG 岛？"},
     ]
     answer = llm.think(messages, temperature=0.3)

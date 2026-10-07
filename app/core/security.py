@@ -3,6 +3,7 @@ PlantGenome Agent - 安全模块
 
 密码哈希（直接使用 bcrypt 库，避免 passlib 版本冲突）+ JWT 令牌生成与验证。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -53,7 +54,9 @@ def get_password_hash(password: str) -> str:
     return hashed.decode("utf-8")
 
 
-def create_access_token(subject: str | Any, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(
+    subject: str | Any, expires_delta: Optional[timedelta] = None
+) -> str:
     """
     创建 JWT 访问令牌。
 
@@ -85,7 +88,9 @@ def create_access_token(subject: str | Any, expires_delta: Optional[timedelta] =
         "iat": datetime.now(timezone.utc),
         "type": "access",
     }
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    encoded_jwt = jwt.encode(
+        to_encode, settings.secret_key, algorithm=settings.algorithm
+    )
     return encoded_jwt
 
 
@@ -100,7 +105,11 @@ def decode_access_token(token: str) -> Optional[dict]:
         Optional[dict]: 解码后的 payload，如果令牌无效则返回 None
     """
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = jwt.decode(
+            token, settings.secret_key, algorithms=[settings.algorithm]
+        )
+        if payload.get("type") != "access" or not payload.get("sub"):
+            return None
         return payload
     except JWTError:
         return None

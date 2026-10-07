@@ -48,8 +48,8 @@ def test_router_blocks_arguments_only_payload(monkeypatch):
     result = nodes.router_node(state)
 
     assert result["tool_name"] is None
-    assert result["tool_validation_error"]
-    assert result["tool_result"]["error_type"] == "tool_validation_error"
+    assert result["router_error"]["type"] == "router_invalid_response"
+    assert result["tool_result"]["error_type"] == "router_invalid_response"
     assert should_call_tool({**state, **result}) == "answer"
 
 

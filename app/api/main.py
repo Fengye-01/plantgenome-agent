@@ -8,15 +8,8 @@ PlantGenome Agent - FastAPI 主入口
 - /api/tasks: 任务（查询异步任务状态）
 - /health: 健康检查
 """
+
 from __future__ import annotations
-
-import sys
-from pathlib import Path
-
-# 确保项目根目录在 sys.path 中
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 from contextlib import asynccontextmanager
 
@@ -27,7 +20,7 @@ from app.api.auth import router as auth_router
 from app.api.chat import router as chat_router
 from app.api.documents import router as documents_router
 from app.api.tasks import router as tasks_router
-from app.core.config import get_settings
+from app.core.config import get_settings, validate_security_settings
 
 settings = get_settings()
 
@@ -41,6 +34,7 @@ async def lifespan(app: FastAPI):
     shutdown: 清理资源
     """
     # Startup
+    validate_security_settings(settings)
     print("=" * 60)
     print("🌱 PlantGenome Agent 启动中...")
     print("=" * 60)
@@ -48,6 +42,7 @@ async def lifespan(app: FastAPI):
     # 初始化数据库表
     try:
         from app.core.database import init_db
+
         init_db()
         print("✅ 数据库初始化完成")
     except Exception as e:
@@ -56,6 +51,7 @@ async def lifespan(app: FastAPI):
     # 检查 Redis
     try:
         from app.core.redis import check_redis_connection
+
         if check_redis_connection():
             print("✅ Redis 连接正常")
         else:
@@ -64,7 +60,9 @@ async def lifespan(app: FastAPI):
         print(f"⚠️  Redis 检查失败: {e}")
 
     print("=" * 60)
-    print(f"✅ PlantGenome Agent 已启动: http://{settings.app_host}:{settings.app_port}")
+    print(
+        f"✅ PlantGenome Agent 已启动: http://{settings.app_host}:{settings.app_port}"
+    )
     print(f"📖 API 文档: http://{settings.app_host}:{settings.app_port}/docs")
     print("=" * 60)
 
@@ -85,7 +83,7 @@ app = FastAPI(
 # CORS 中间件（允许前端跨域访问）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产环境应限制为具体域名
+    allow_origins=list(settings.cors_origins),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -126,6 +124,7 @@ def root():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "app.api.main:app",
         host=settings.app_host,

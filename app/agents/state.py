@@ -8,22 +8,22 @@ AgentState 定义（D8 任务 1）
 - 每个节点返回部分字段，LangGraph 自动 merge
 - State 在整个工作流中传递，记录所有中间结果
 """
+
 from __future__ import annotations
 
-from typing import TypedDict, Optional, Any, List, Dict
-
+from typing import Any, Dict, List, Optional, TypedDict
 
 # ═══════════════════════════════════════════════════════════════
 # 意图分类常量（5 类）
 # ═══════════════════════════════════════════════════════════════
 
-INTENT_LITERATURE_SEARCH = "literature_search"   # 文献/方法/概念问题（检索已有知识库）
+INTENT_LITERATURE_SEARCH = "literature_search"  # 文献/方法/概念问题（检索已有知识库）
 INTENT_LITERATURE_DISCOVERY = "literature_discovery"  # PubMed 文献搜索（发现新文献）
-INTENT_GENE_QUERY = "gene_query"                   # NCBI 基因信息查询
-INTENT_FASTA_ANALYSIS = "fasta_analysis"         # FASTA 序列统计
-INTENT_CPG_SCAN = "cpg_scan"                     # CpG 岛识别
-INTENT_PIPELINE_SUGGEST = "pipeline_suggest"     # 研究流程规划
-INTENT_DIRECT_ANSWER = "direct_answer"           # 闲聊/直接可答
+INTENT_GENE_QUERY = "gene_query"  # NCBI 基因信息查询
+INTENT_FASTA_ANALYSIS = "fasta_analysis"  # FASTA 序列统计
+INTENT_CPG_SCAN = "cpg_scan"  # CpG 岛识别
+INTENT_PIPELINE_SUGGEST = "pipeline_suggest"  # 研究流程规划
+INTENT_DIRECT_ANSWER = "direct_answer"  # 闲聊/直接可答
 
 # 所有合法意图列表
 VALID_INTENTS = [
@@ -52,6 +52,7 @@ INTENT_TO_TOOL = {
 # AgentState 定义
 # ═══════════════════════════════════════════════════════════════
 
+
 class AgentState(TypedDict):
     """
     PlantGenome Agent 的状态数据结构。
@@ -67,6 +68,7 @@ class AgentState(TypedDict):
     - tool_name: 选中的工具名（router_node 决定）
     - tool_input: 工具输入参数（router_node 提取）
     - tool_validation_error: 工具参数校验错误；存在时不会进入 tool_node
+    - router_error: 路由模型不可用或返回空响应时的结构化错误
     - tool_result: 工具执行结果（tool_node 产出，最近一次）
     - tool_history: 工具调用历史（多工具链式调用时，记录所有已调用的工具和结果）
     - iteration: 当前迭代次数（多工具链式调用的循环计数，达到上限后强制结束）
@@ -75,25 +77,28 @@ class AgentState(TypedDict):
     - sources: 来源引用（answer_node 产出）
     - execution_log: 执行日志（记录每个节点的执行情况，用于调试和展示）
     """
-    query: str                                    # 用户原始问题
-    user_id: Optional[int]                         # 当前用户 ID（认证态注入，用于数据隔离）
-    messages: List[Dict[str, str]]                # 对话历史
-    intent: Optional[str]                          # 路由分类结果
-    tool_name: Optional[str]                       # 选中的工具名
-    tool_input: Optional[Dict[str, Any]]           # 工具输入参数
+
+    query: str  # 用户原始问题
+    user_id: Optional[int]  # 当前用户 ID（认证态注入，用于数据隔离）
+    messages: List[Dict[str, str]]  # 对话历史
+    intent: Optional[str]  # 路由分类结果
+    tool_name: Optional[str]  # 选中的工具名
+    tool_input: Optional[Dict[str, Any]]  # 工具输入参数
     tool_validation_error: Optional[List[Dict[str, Any]]]  # 工具参数校验错误
-    tool_result: Optional[Any]                     # 工具执行结果（最近一次）
-    tool_history: List[Dict[str, Any]]             # 工具调用历史（多工具链式调用）
-    iteration: int                                 # 当前迭代次数
-    retrieved_context: Optional[List[Dict]]        # RAG 检索结果
-    final_answer: Optional[str]                    # 最终回答
-    sources: Optional[List[str]]                   # 来源引用
-    execution_log: List[Dict[str, Any]]            # 执行日志
+    router_error: Optional[Dict[str, Any]]  # 路由失败信息
+    tool_result: Optional[Any]  # 工具执行结果（最近一次）
+    tool_history: List[Dict[str, Any]]  # 工具调用历史（多工具链式调用）
+    iteration: int  # 当前迭代次数
+    retrieved_context: Optional[List[Dict]]  # RAG 检索结果
+    final_answer: Optional[str]  # 最终回答
+    sources: Optional[List[str]]  # 来源引用
+    execution_log: List[Dict[str, Any]]  # 执行日志
 
 
 # ═══════════════════════════════════════════════════════════════
 # 初始状态工厂函数
 # ═══════════════════════════════════════════════════════════════
+
 
 def create_initial_state(
     query: str,
@@ -120,6 +125,7 @@ def create_initial_state(
         "tool_name": None,
         "tool_input": None,
         "tool_validation_error": None,
+        "router_error": None,
         "tool_result": None,
         "tool_history": [],
         "iteration": 0,

@@ -7,7 +7,7 @@ LangGraph 工作流构建（D11 任务 2：完整图 + 条件边）
                           answer → END
 
 循环控制：
-- 最大迭代次数 MAX_ITERATIONS = 3（防止死循环）
+- 最大工具调用次数 MAX_TOOL_CALLS = 3（防止死循环）
 - 当 router 返回 direct_answer 或没有选中工具时，跳出循环到 answer
 - 达到最大迭代次数时，强制到 answer
 
@@ -19,23 +19,25 @@ LangGraph 工作流构建（D11 任务 2：完整图 + 条件边）
 - compile: 编译图
 - invoke / stream: 运行图
 """
+
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Optional
 
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
 
-from app.agents.state import AgentState, create_initial_state, INTENT_DIRECT_ANSWER
-from app.agents.nodes import router_node, tool_node, answer_node
+from app.agents.nodes import answer_node, router_node, tool_node
+from app.agents.state import INTENT_DIRECT_ANSWER, AgentState, create_initial_state
 
-
-# 最大工具调用迭代次数（多工具链式调用的循环上限，防止死循环）
-MAX_ITERATIONS = 3
+# 多工具链式调用的真实执行上限；直接按 tool_history 计数，避免 Router 轮次偏差。
+MAX_TOOL_CALLS = 3
 
 
 # ═══════════════════════════════════════════════════════════════
 # 条件边函数
 # ═══════════════════════════════════════════════════════════════
+
 
 def should_call_tool(state: AgentState) -> str:
     """
@@ -45,7 +47,7 @@ def should_call_tool(state: AgentState) -> str:
     - intent == direct_answer → 直接回答（不需要工具）
     - tool_name 为 None → 直接回答（没有选中工具）
     - tool_validation_error 非空 → 直接回答，不执行工具
-    - iteration >= MAX_ITERATIONS → 强制结束（防止死循环）
+    - 已执行工具数达到 MAX_TOOL_CALLS → 强制结束（防止死循环）
     - 其他情况 → 调用工具（调用完后会回到 router，可继续调用其他工具）
 
     Args:
@@ -56,14 +58,12 @@ def should_call_tool(state: AgentState) -> str:
     """
     intent = state.get("intent")
     tool_name = state.get("tool_name")
-    iteration = state.get("iteration", 0)
-
     # Router 已判定参数不合法，不允许进入 Tool 节点。
-    if state.get("tool_validation_error"):
+    if state.get("tool_validation_error") or state.get("router_error"):
         return "answer"
 
-    # 达到最大迭代次数，强制结束（防止死循环）
-    if iteration >= MAX_ITERATIONS:
+    # 达到最大工具调用次数，强制结束（防止死循环）
+    if len(state.get("tool_history", [])) >= MAX_TOOL_CALLS:
         return "answer"
 
     # direct_answer 意图或没有选中工具 → 直接回答
@@ -78,6 +78,7 @@ def should_call_tool(state: AgentState) -> str:
 # 图构建函数
 # ═══════════════════════════════════════════════════════════════
 
+
 def build_graph():
     """
     构建 PlantGenome Agent 的完整 LangGraph 工作流（支持多工具链式调用）。
@@ -89,7 +90,7 @@ def build_graph():
 
     条件边逻辑：
     - intent == direct_answer 或 tool_name == None → 直接到 answer
-    - iteration >= MAX_ITERATIONS → 强制到 answer
+    - 已执行工具数达到 MAX_TOOL_CALLS → 强制到 answer
     - 其他情况 → 到 tool（调用完后回到 router）
 
     Returns:
@@ -130,9 +131,16 @@ def build_graph():
     return app
 
 
+@lru_cache(maxsize=1)
+def get_compiled_graph():
+    """Compile the stateless graph once per process."""
+    return build_graph()
+
+
 # ═══════════════════════════════════════════════════════════════
 # 便捷调用函数
 # ═══════════════════════════════════════════════════════════════
+
 
 def run_agent(
     query: str,
@@ -153,8 +161,7 @@ def run_agent(
     Returns:
         最终的 AgentState（含 final_answer、sources、execution_log 等）
     """
-    # 构建图
-    app = build_graph()
+    app = get_compiled_graph()
 
     # 创建初始状态（携带 user_id，沿 LangGraph 状态传递，不经过 LLM）
     initial_state = create_initial_state(query, messages, user_id=user_id)
@@ -162,28 +169,15 @@ def run_agent(
     if stream:
         # 流式模式：逐个产出每个节点的输出
         print("=== Agent 执行过程 ===")
-        for output in app.stream(initial_state):
-            for node_name, node_output in output.items():
-                print(f"\n📍 节点: {node_name}")
-                if node_name == "router":
-                    print(f"   intent: {node_output.get('intent')}")
-                    print(f"   tool_name: {node_output.get('tool_name')}")
-                    print(f"   tool_input: {node_output.get('tool_input')}")
-                elif node_name == "tool":
-                    tool_result = node_output.get("tool_result", {})
-                    if isinstance(tool_result, dict):
-                        print(f"   tool_result keys: {list(tool_result.keys())}")
-                        if "error" in tool_result:
-                            print(f"   error: {tool_result['error']}")
-                    elif isinstance(tool_result, list):
-                        print(f"   tool_result 是列表，长度: {len(tool_result)}")
-                elif node_name == "answer":
-                    answer = node_output.get("final_answer", "")
-                    print(f"   answer 长度: {len(answer)}")
-                    print(f"   answer 前 200 字: {answer[:200]}")
+        final_state = initial_state
+        for snapshot in app.stream(initial_state, stream_mode="values"):
+            final_state = snapshot
+            print(
+                f"\n📍 intent={snapshot.get('intent')} "
+                f"tool={snapshot.get('tool_name')} iteration={snapshot.get('iteration')}"
+            )
         print("\n=== 执行完成 ===")
-        # 流式模式需要再 invoke 一次获取最终状态
-        return app.invoke(initial_state)
+        return final_state
     else:
         # 同步模式：直接返回最终状态
         return app.invoke(initial_state)
@@ -192,6 +186,7 @@ def run_agent(
 # ═══════════════════════════════════════════════════════════════
 # 图可视化
 # ═══════════════════════════════════════════════════════════════
+
 
 def print_graph_structure():
     """打印图结构（文字描述，不需要额外依赖）。"""
@@ -229,8 +224,8 @@ def print_graph_structure():
     print()
     print("循环说明:")
     print("  tool 执行完后回到 router，可继续调用其他工具（多工具链式调用）")
-    print(f"  最大迭代次数: {MAX_ITERATIONS}（防止死循环）")
-    print("  当 router 返回 direct_answer 或达到最大迭代次数时，跳到 answer 结束")
+    print(f"  最大工具调用次数: {MAX_TOOL_CALLS}（防止死循环）")
+    print("  当 router 返回 direct_answer 或达到工具调用上限时，跳到 answer 结束")
     print("=" * 60)
 
 
@@ -262,7 +257,7 @@ if __name__ == "__main__":
 
         result = run_agent(query, stream=True)
 
-        print(f"\n📋 最终状态:")
+        print("\n📋 最终状态:")
         print(f"   query: {result['query']}")
         print(f"   intent: {result['intent']}")
         print(f"   tool_name: {result['tool_name']}")
@@ -270,10 +265,12 @@ if __name__ == "__main__":
         print(f"   sources 数量: {len(result.get('sources', []))}")
         print(f"   execution_log 条数: {len(result['execution_log'])}")
 
-        print(f"\n📝 执行日志:")
+        print("\n📝 执行日志:")
         for j, log in enumerate(result["execution_log"], 1):
-            print(f"   {j}. node={log.get('node')}, status={log.get('status')}, "
-                  f"latency={log.get('latency')}s")
+            print(
+                f"   {j}. node={log.get('node')}, status={log.get('status')}, "
+                f"latency={log.get('latency')}s"
+            )
 
     print("\n" + "=" * 60)
     print("所有测试完成！")

@@ -1,13 +1,19 @@
 """
 聊天接口：发送消息、获取会话列表、获取历史消息。
 """
+
 from __future__ import annotations
+
+import logging
+from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.agents.graph import run_agent
 from app.api.deps import get_current_user
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.models import ChatSession, Message, User
 from app.schemas.chat import (
@@ -19,6 +25,34 @@ from app.schemas.chat import (
 )
 
 router = APIRouter(prefix="/api/chat", tags=["聊天"])
+logger = logging.getLogger(__name__)
+settings = get_settings()
+
+
+def _load_conversation_history(db: Session, session_id: int) -> list[dict[str, str]]:
+    """Load a bounded, chronological history for one already-authorized session."""
+    rows = (
+        db.query(Message)
+        .filter(Message.session_id == session_id)
+        .order_by(Message.created_at.desc(), Message.id.desc())
+        .limit(settings.chat_history_limit)
+        .all()
+    )
+    rows.reverse()
+    max_chars = settings.chat_history_message_max_chars
+    return [
+        {"role": row.role, "content": row.content[:max_chars]}
+        for row in rows
+        if row.role in {"user", "assistant"} and row.content
+    ]
+
+
+def _last_executed_tool(result: dict[str, Any]) -> str | None:
+    """Return the last tool that actually reached tool history, not the final router choice."""
+    for call in reversed(result.get("tool_history", []) or []):
+        if call.get("tool"):
+            return call["tool"]
+    return result.get("tool_name")
 
 
 @router.post("", response_model=ChatResponse)
@@ -32,17 +66,21 @@ def chat(
 
     流程：
     1. 获取或创建会话
-    2. 保存用户消息
-    3. 调用 Agent（router → tool → answer）
-    4. 保存 AI 回答（含 sources、tool_result、execution_log）
+    2. 读取有限历史并持久化用户消息
+    3. 结束数据库事务后调用 Agent（router → tool → answer）
+    4. 单独保存 AI 回答或失败记录
     5. 返回回答
     """
     # 1. 获取或创建会话
     if request.session_id:
-        session = db.query(ChatSession).filter(
-            ChatSession.id == request.session_id,
-            ChatSession.user_id == current_user.id,
-        ).first()
+        session = (
+            db.query(ChatSession)
+            .filter(
+                ChatSession.id == request.session_id,
+                ChatSession.user_id == current_user.id,
+            )
+            .first()
+        )
         if not session:
             raise HTTPException(status_code=404, detail="会话不存在")
     else:
@@ -54,23 +92,70 @@ def chat(
         db.add(session)
         db.flush()
 
-    # 2. 保存用户消息
+    # 2. 只读取已通过所有权校验的当前会话历史。
+    history = _load_conversation_history(db, session.id)
+
+    # 3. 保存用户消息
     user_message = Message(
         session_id=session.id,
         role="user",
         content=request.message,
     )
     db.add(user_message)
+    session.updated_at = datetime.now(timezone.utc)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    db.refresh(session)
 
-    # 3. 调用 Agent（传入认证用户 ID，用于向量库用户级数据隔离）
-    result = run_agent(request.message, user_id=current_user.id)
+    # 4. 数据库事务已经结束；Agent 的网络调用和工具执行不会长期占用事务。
+    try:
+        result = run_agent(
+            request.message,
+            messages=history,
+            user_id=current_user.id,
+        )
+    except Exception as exc:
+        logger.exception(
+            "Agent request failed for user=%s session=%s", current_user.id, session.id
+        )
+        failure_answer = "Agent 执行失败，本次未产生可信结果，请稍后重试。"
+        failure_log = [
+            {
+                "node": "agent",
+                "status": "failed",
+                "error_type": "agent_execution_error",
+                "error": type(exc).__name__,
+            }
+        ]
+        db.add(
+            Message(
+                session_id=session.id,
+                role="assistant",
+                content=failure_answer,
+                execution_log=failure_log,
+            )
+        )
+        session.updated_at = datetime.now(timezone.utc)
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=failure_answer,
+        ) from exc
+
     answer = result.get("final_answer", "抱歉，未能生成回答。")
     sources = result.get("sources", [])
-    tool_name = result.get("tool_name")
+    tool_name = _last_executed_tool(result)
     tool_result = result.get("tool_result")
     execution_log = result.get("execution_log", [])
 
-    # 4. 保存 AI 回答
+    # 5. 保存 AI 回答
     ai_message = Message(
         session_id=session.id,
         role="assistant",
@@ -83,24 +168,29 @@ def chat(
     db.add(ai_message)
 
     # 更新会话时间
-    from datetime import datetime
-    session.updated_at = datetime.utcnow()
+    session.updated_at = datetime.now(timezone.utc)
 
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(session)
     db.refresh(ai_message)
 
-    # 5. 返回响应
+    # 6. 返回响应
     source_list = []
     for s in sources:
         if isinstance(s, dict):
-            source_list.append(Source(
-                filename=s.get("filename"),
-                page_num=s.get("page_num"),
-                snippet=s.get("snippet"),
-                heading_path=s.get("heading_path"),
-                similarity=s.get("similarity"),
-            ))
+            source_list.append(
+                Source(
+                    filename=s.get("filename"),
+                    page_num=s.get("page_num"),
+                    snippet=s.get("snippet"),
+                    heading_path=s.get("heading_path"),
+                    similarity=s.get("similarity"),
+                )
+            )
 
     return ChatResponse(
         answer=answer,
@@ -128,13 +218,15 @@ def list_sessions(
     )
     result = []
     for s in sessions:
-        result.append(ChatSessionResponse(
-            id=s.id,
-            title=s.title,
-            created_at=s.created_at,
-            updated_at=s.updated_at,
-            message_count=len(s.messages),
-        ))
+        result.append(
+            ChatSessionResponse(
+                id=s.id,
+                title=s.title,
+                created_at=s.created_at,
+                updated_at=s.updated_at,
+                message_count=len(s.messages),
+            )
+        )
     return result
 
 
@@ -145,10 +237,14 @@ def get_session_messages(
     db: Session = Depends(get_db),
 ):
     """获取指定会话的历史消息。"""
-    session = db.query(ChatSession).filter(
-        ChatSession.id == session_id,
-        ChatSession.user_id == current_user.id,
-    ).first()
+    session = (
+        db.query(ChatSession)
+        .filter(
+            ChatSession.id == session_id,
+            ChatSession.user_id == current_user.id,
+        )
+        .first()
+    )
     if not session:
         raise HTTPException(status_code=404, detail="会话不存在")
 
@@ -168,10 +264,14 @@ def delete_session(
     db: Session = Depends(get_db),
 ):
     """删除会话（级联删除所有消息）。"""
-    session = db.query(ChatSession).filter(
-        ChatSession.id == session_id,
-        ChatSession.user_id == current_user.id,
-    ).first()
+    session = (
+        db.query(ChatSession)
+        .filter(
+            ChatSession.id == session_id,
+            ChatSession.user_id == current_user.id,
+        )
+        .first()
+    )
     if not session:
         raise HTTPException(status_code=404, detail="会话不存在")
 

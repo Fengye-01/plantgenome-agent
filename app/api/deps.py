@@ -5,6 +5,7 @@ FastAPI 依赖注入。
 - get_db: 数据库会话
 - get_current_user: 当前登录用户（从 JWT 令牌解析）
 """
+
 from __future__ import annotations
 
 from fastapi import Depends, HTTPException, status
@@ -17,6 +18,10 @@ from app.models import User
 
 # OAuth2 密码流，tokenUrl 指向登录接口
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+optional_oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/api/auth/login",
+    auto_error=False,
+)
 
 
 def get_current_user(
@@ -62,7 +67,7 @@ def get_current_user(
 
 
 def get_current_user_optional(
-    token: str = Depends(oauth2_scheme),
+    token: str | None = Depends(optional_oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User | None:
     """
@@ -71,6 +76,9 @@ def get_current_user_optional(
     与 get_current_user 不同，如果没有令牌或令牌无效，返回 None 而不是抛出异常。
     用于可选认证的接口。
     """
+    if not token:
+        return None
+
     try:
         return get_current_user(token, db)
     except HTTPException:

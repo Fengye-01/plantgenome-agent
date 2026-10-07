@@ -80,7 +80,7 @@ stateDiagram-v2
     Answer --> [*]: 最终回答
 ```
 
-> **多工具链式调用**：tool 执行后回到 router，可连续调用多个工具（最多 3 次迭代）。router 基于已调用工具历史判断是否需要继续，防止重复调用。当 router 返回 direct_answer 或达到最大迭代次数时，跳到 answer 结束。
+> **多工具链式调用**：tool 执行后回到 router，可连续调用多个工具（最多执行 3 次工具）。router 基于已调用工具历史判断是否需要继续，并按工具名与参数去重。当 router 返回 direct_answer 或工具执行次数达到上限时，跳到 answer 结束。
 
 > 完整架构图（含详细说明）见 [docs/architecture.md](docs/architecture.md)
 

@@ -2,14 +2,18 @@
 PlantGenome Agent 全局配置
 从环境变量或 .env 文件读取，保持配置与代码分离。
 """
+
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+
 from dotenv import load_dotenv
 
 # 加载项目根目录的 .env 文件
 load_dotenv()
+
+DEFAULT_SECRET_KEY = "plantgenome-agent-secret-key-change-in-production"
 
 
 @dataclass
@@ -46,20 +50,35 @@ class Settings:
     # ── 数据库配置 ──
     database_url: str = os.getenv(
         "DATABASE_URL",
-        "postgresql+psycopg2://plantgenome:plantgenome@localhost:5432/plantgenome"
+        "postgresql+psycopg2://plantgenome:plantgenome@localhost:5432/plantgenome",
     )
 
     # ── Redis 配置 ──
     redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
     # ── JWT / 安全配置 ──
-    secret_key: str = os.getenv("SECRET_KEY", "plantgenome-agent-secret-key-change-in-production")
+    secret_key: str = os.getenv("SECRET_KEY", DEFAULT_SECRET_KEY)
     algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
-    access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24小时
+    access_token_expire_minutes: int = int(
+        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")
+    )  # 24小时
 
     # ── 应用配置 ──
+    app_env: str = os.getenv("APP_ENV", "development").lower()
     app_host: str = os.getenv("APP_HOST", "0.0.0.0")
     app_port: int = int(os.getenv("APP_PORT", "8000"))
+    cors_origins: tuple[str, ...] = tuple(
+        origin.strip()
+        for origin in os.getenv(
+            "CORS_ORIGINS",
+            "http://localhost:8501,http://127.0.0.1:8501",
+        ).split(",")
+        if origin.strip()
+    )
+    chat_history_limit: int = int(os.getenv("CHAT_HISTORY_LIMIT", "12"))
+    chat_history_message_max_chars: int = int(
+        os.getenv("CHAT_HISTORY_MESSAGE_MAX_CHARS", "2000")
+    )
 
 
 # 全局单例
@@ -69,3 +88,17 @@ settings = Settings()
 def get_settings() -> Settings:
     """获取全局配置单例。"""
     return settings
+
+
+def validate_security_settings(value: Settings | None = None) -> None:
+    """Fail fast when production is started with an unsafe JWT secret."""
+    current = value or settings
+    if current.app_env not in {"production", "prod"}:
+        return
+
+    if current.secret_key == DEFAULT_SECRET_KEY or len(current.secret_key) < 32:
+        raise RuntimeError(
+            "生产环境必须通过 SECRET_KEY 配置至少 32 个字符的随机 JWT 密钥"
+        )
+    if "*" in current.cors_origins:
+        raise RuntimeError("生产环境 CORS_ORIGINS 不能使用通配符 *")
