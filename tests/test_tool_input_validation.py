@@ -3,8 +3,8 @@ import pytest
 from app.agents import nodes
 from app.agents.graph import should_call_tool
 from app.agents.state import create_initial_state
-from app.agents.tool_schemas import validate_tool_input
 from app.agents.tool_registry import tool_executor
+from app.agents.tool_schemas import validate_tool_input
 
 
 class FakeRouterLlm:
@@ -32,6 +32,22 @@ def test_each_tool_rejects_missing_required_input(tool_name, missing_field):
     assert validated is None
     assert errors
     assert missing_field in errors[0]["loc"]
+
+
+@pytest.mark.parametrize(
+    ("tool_name", "payload"),
+    [
+        ("search_pdf_knowledge", {"query": "x" * 10_001}),
+        ("parse_fasta_stats", {"fasta_text": "A" * 1_000_001}),
+        ("scan_cpg_islands", {"sequence": "A" * 1_000_001}),
+        ("search_pubmed", {"keyword": "x" * 2_001}),
+    ],
+)
+def test_tool_inputs_reject_unbounded_payloads(tool_name, payload):
+    validated, errors = validate_tool_input(tool_name, payload)
+
+    assert validated is None
+    assert errors[0]["type"] == "string_too_long"
 
 
 def test_router_blocks_arguments_only_payload(monkeypatch):

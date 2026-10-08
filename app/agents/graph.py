@@ -32,6 +32,17 @@ from app.agents.state import INTENT_DIRECT_ANSWER, AgentState, create_initial_st
 
 # 多工具链式调用的真实执行上限；直接按 tool_history 计数，避免 Router 轮次偏差。
 MAX_TOOL_CALLS = 3
+# Router/Tool 循环最多需要 8 个节点步骤；显式上限作为独立保险，
+# 避免未来修改条件边时出现无界循环。
+GRAPH_RECURSION_LIMIT = 12
+
+
+def _finalize_state(state: AgentState) -> AgentState:
+    """Attach the run identifier to every persisted trace entry."""
+    run_id = state["run_id"]
+    for entry in state.get("execution_log", []):
+        entry.setdefault("run_id", run_id)
+    return state
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -170,17 +181,26 @@ def run_agent(
         # 流式模式：逐个产出每个节点的输出
         print("=== Agent 执行过程 ===")
         final_state = initial_state
-        for snapshot in app.stream(initial_state, stream_mode="values"):
+        for snapshot in app.stream(
+            initial_state,
+            config={"recursion_limit": GRAPH_RECURSION_LIMIT},
+            stream_mode="values",
+        ):
             final_state = snapshot
             print(
                 f"\n📍 intent={snapshot.get('intent')} "
-                f"tool={snapshot.get('tool_name')} iteration={snapshot.get('iteration')}"
+                f"tool={snapshot.get('tool_name')} "
+                f"iteration={snapshot.get('iteration')}"
             )
         print("\n=== 执行完成 ===")
-        return final_state
+        return _finalize_state(final_state)
     else:
         # 同步模式：直接返回最终状态
-        return app.invoke(initial_state)
+        final_state = app.invoke(
+            initial_state,
+            config={"recursion_limit": GRAPH_RECURSION_LIMIT},
+        )
+        return _finalize_state(final_state)
 
 
 # ═══════════════════════════════════════════════════════════════

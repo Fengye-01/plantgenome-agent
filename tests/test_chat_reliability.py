@@ -67,11 +67,12 @@ def test_stream_mode_does_not_execute_graph_twice(monkeypatch):
     class FakeGraph:
         invoke_calls = 0
 
-        def stream(self, initial_state, stream_mode):
+        def stream(self, initial_state, config, stream_mode):
+            assert config == {"recursion_limit": graph.GRAPH_RECURSION_LIMIT}
             assert stream_mode == "values"
             yield {**initial_state, "final_answer": "done"}
 
-        def invoke(self, _initial_state):
+        def invoke(self, _initial_state, config=None):
             self.invoke_calls += 1
             raise AssertionError("stream mode must not invoke the graph again")
 
@@ -82,6 +83,29 @@ def test_stream_mode_does_not_execute_graph_twice(monkeypatch):
 
     assert result["final_answer"] == "done"
     assert fake.invoke_calls == 0
+
+
+def test_each_agent_run_gets_an_independent_state_and_trace_id(monkeypatch):
+    captured_states = []
+
+    class FakeGraph:
+        def invoke(self, initial_state, config):
+            assert config == {"recursion_limit": graph.GRAPH_RECURSION_LIMIT}
+            captured_states.append(initial_state)
+            initial_state["execution_log"].append({"node": "answer"})
+            return initial_state
+
+    monkeypatch.setattr(graph, "get_compiled_graph", lambda: FakeGraph())
+
+    first = graph.run_agent("first", user_id=1)
+    second = graph.run_agent("second", user_id=2)
+
+    assert first["run_id"] != second["run_id"]
+    assert first["user_id"] == 1
+    assert second["user_id"] == 2
+    assert first["execution_log"][0]["run_id"] == first["run_id"]
+    assert second["execution_log"][0]["run_id"] == second["run_id"]
+    assert captured_states[0] is not captured_states[1]
 
 
 def test_tool_call_limit_counts_executed_tools_not_router_rounds():
@@ -226,6 +250,7 @@ def test_chat_passes_bounded_history_and_persists_actual_tool(monkeypatch):
         def fake_run_agent(query, messages, user_id):
             captured.update(query=query, messages=messages, user_id=user_id)
             return {
+                "run_id": "run-123",
                 "final_answer": "本轮回答",
                 "sources": [],
                 "tool_name": None,
@@ -242,6 +267,7 @@ def test_chat_passes_bounded_history_and_persists_actual_tool(monkeypatch):
         )
 
         assert response.status_code == 200
+        assert response.json()["run_id"] == "run-123"
         assert captured == {
             "query": "继续问",
             "messages": [
@@ -281,5 +307,93 @@ def test_chat_persists_failure_trace(monkeypatch):
         verify_db.close()
 
 
+def test_chat_returns_502_and_persists_controlled_router_failure(monkeypatch):
+    with _chat_test_app() as (client, session_factory, _user):
+
+        def router_failure(*_args, **_kwargs):
+            return {
+                "final_answer": "路由服务暂时不可用，请稍后重试。",
+                "sources": [],
+                "tool_name": None,
+                "tool_result": {
+                    "error": "意图路由服务暂时不可用",
+                    "error_type": "router_unavailable",
+                },
+                "tool_history": [],
+                "router_error": {
+                    "type": "router_unavailable",
+                    "message": "意图路由服务暂时不可用",
+                },
+                "execution_log": [
+                    {
+                        "node": "router",
+                        "status": "failed",
+                        "error_type": "router_unavailable",
+                    }
+                ],
+            }
+
+        monkeypatch.setattr(chat_api, "run_agent", router_failure)
+
+        response = client.post("/api/chat", json={"message": "PAML是什么？"})
+
+        assert response.status_code == 502
+        assert "路由服务暂时不可用" in response.json()["detail"]
+
+        verify_db = session_factory()
+        messages = verify_db.query(Message).order_by(Message.id.asc()).all()
+        assert [message.role for message in messages] == ["user", "assistant"]
+        assert messages[-1].execution_log[0]["error_type"] == "router_unavailable"
+        verify_db.close()
+
+
+def test_chat_keeps_evidence_abstention_as_success(monkeypatch):
+    with _chat_test_app() as (client, _session_factory, _user):
+
+        def evidence_abstention(*_args, **_kwargs):
+            return {
+                "run_id": "run-abstained",
+                "final_answer": "当前知识库中没有足够相关的文献证据。",
+                "sources": [],
+                "tool_name": "search_pdf_knowledge",
+                "tool_result": {
+                    "has_result": False,
+                    "context": "",
+                    "sources": [],
+                    "evidence_reason": "insufficient_evidence",
+                },
+                "tool_history": [{"tool": "search_pdf_knowledge", "status": "success"}],
+                "router_error": None,
+                "execution_log": [
+                    {
+                        "node": "answer",
+                        "status": "abstained",
+                        "reason": "insufficient_evidence",
+                    }
+                ],
+            }
+
+        monkeypatch.setattr(chat_api, "run_agent", evidence_abstention)
+
+        response = client.post("/api/chat", json={"message": "未知专业问题"})
+
+        assert response.status_code == 200
+        assert "没有足够相关" in response.json()["answer"]
+
+
 def test_public_chat_request_does_not_advertise_fake_streaming():
     assert "stream" not in ChatRequest.model_fields
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"message": ""},
+        {"message": "hello", "session_id": 0},
+    ],
+)
+def test_chat_rejects_invalid_request_boundaries(payload):
+    with _chat_test_app() as (client, _session_factory, _user):
+        response = client.post("/api/chat", json=payload)
+
+        assert response.status_code == 422

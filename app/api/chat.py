@@ -48,7 +48,7 @@ def _load_conversation_history(db: Session, session_id: int) -> list[dict[str, s
 
 
 def _last_executed_tool(result: dict[str, Any]) -> str | None:
-    """Return the last tool that actually reached tool history, not the final router choice."""
+    """Return the last tool that actually reached tool history."""
     for call in reversed(result.get("tool_history", []) or []):
         if call.get("tool"):
             return call["tool"]
@@ -155,6 +155,31 @@ def chat(
     tool_result = result.get("tool_result")
     execution_log = result.get("execution_log", [])
 
+    # Router/LLM 故障是上游执行失败，不是“证据不足”这类正常业务拒答。
+    # 先持久化用户可读消息和诊断轨迹，再用 502 告知客户端本次请求失败。
+    if result.get("router_error"):
+        db.add(
+            Message(
+                session_id=session.id,
+                role="assistant",
+                content=answer,
+                sources=None,
+                tool_name=None,
+                tool_result=tool_result if isinstance(tool_result, dict) else None,
+                execution_log=execution_log if execution_log else None,
+            )
+        )
+        session.updated_at = datetime.now(timezone.utc)
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=answer,
+        )
+
     # 5. 保存 AI 回答
     ai_message = Message(
         session_id=session.id,
@@ -195,6 +220,7 @@ def chat(
     return ChatResponse(
         answer=answer,
         session_id=session.id,
+        run_id=result["run_id"],
         sources=source_list,
         tool_name=tool_name,
         tool_result=tool_result,

@@ -12,18 +12,18 @@ class ToolInput(BaseModel):
 
 
 class SearchPdfKnowledgeInput(ToolInput):
-    query: str = Field(min_length=1)
+    query: str = Field(min_length=1, max_length=10_000)
     top_k: int = Field(default=3, ge=1, le=20)
     user_id: int | None = Field(default=None, ge=1)
     enable_hybrid: bool = True
 
 
 class ParseFastaStatsInput(ToolInput):
-    fasta_text: str = Field(min_length=1)
+    fasta_text: str = Field(min_length=1, max_length=1_000_000)
 
 
 class ScanCpgIslandsInput(ToolInput):
-    sequence: str = Field(min_length=1)
+    sequence: str = Field(min_length=1, max_length=1_000_000)
     window_size: int = Field(default=200, ge=1)
     step: int = Field(default=100, ge=1)
     gc_threshold: float = Field(default=0.5, ge=0, le=1)
@@ -31,19 +31,19 @@ class ScanCpgIslandsInput(ToolInput):
 
 
 class SuggestPipelineInput(ToolInput):
-    research_goal: str = Field(min_length=1)
+    research_goal: str = Field(min_length=1, max_length=10_000)
     top_k: int = Field(default=3, ge=1, le=20)
     user_id: int | None = Field(default=None, ge=1)
 
 
 class SearchPubmedInput(ToolInput):
-    keyword: str = Field(min_length=1)
+    keyword: str = Field(min_length=1, max_length=2_000)
     max_results: int = Field(default=5, ge=1, le=10)
 
 
 class QueryNcbiGeneInput(ToolInput):
-    gene_name: str = Field(min_length=1)
-    organism: str | None = None
+    gene_name: str = Field(min_length=1, max_length=500)
+    organism: str | None = Field(default=None, max_length=500)
     max_results: int = Field(default=3, ge=1, le=5)
 
 

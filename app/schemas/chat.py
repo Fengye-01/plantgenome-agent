@@ -11,8 +11,17 @@ from pydantic import BaseModel, Field
 class ChatRequest(BaseModel):
     """聊天请求。"""
 
-    message: str = Field(..., description="用户消息")
-    session_id: Optional[int] = Field(None, description="会话 ID，不传则创建新会话")
+    message: str = Field(
+        ...,
+        min_length=1,
+        max_length=1_000_000,
+        description="用户消息",
+    )
+    session_id: Optional[int] = Field(
+        None,
+        ge=1,
+        description="会话 ID，不传则创建新会话",
+    )
 
 
 class Source(BaseModel):
@@ -30,6 +39,7 @@ class ChatResponse(BaseModel):
 
     answer: str
     session_id: int
+    run_id: str
     sources: list[Source] = Field(default_factory=list)
     tool_name: Optional[str] = None
     tool_result: Optional[Any] = None

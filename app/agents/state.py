@@ -11,7 +11,8 @@ AgentState 定义（D8 任务 1）
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, NotRequired, Optional, TypedDict
+from uuid import uuid4
 
 # ═══════════════════════════════════════════════════════════════
 # 意图分类常量（5 类）
@@ -53,6 +54,16 @@ INTENT_TO_TOOL = {
 # ═══════════════════════════════════════════════════════════════
 
 
+class SourceRecord(TypedDict):
+    """A source citation returned by document retrieval."""
+
+    filename: NotRequired[Optional[str]]
+    page_num: NotRequired[Optional[int]]
+    snippet: NotRequired[Optional[str]]
+    heading_path: NotRequired[Optional[str]]
+    similarity: NotRequired[Optional[float]]
+
+
 class AgentState(TypedDict):
     """
     PlantGenome Agent 的状态数据结构。
@@ -61,6 +72,7 @@ class AgentState(TypedDict):
     每个节点只返回需要更新的字段，LangGraph 会自动 merge 到原状态中。
 
     字段说明：
+    - run_id: 单次 Agent 运行标识，用于串联日志和故障记录
     - query: 用户原始问题
     - user_id: 当前登录用户 ID（来自 JWT 认证，不经过 LLM，用于向量库用户隔离）
     - messages: 对话历史（用于多轮对话）
@@ -78,6 +90,7 @@ class AgentState(TypedDict):
     - execution_log: 执行日志（记录每个节点的执行情况，用于调试和展示）
     """
 
+    run_id: str  # 单次运行标识，不得跨请求复用
     query: str  # 用户原始问题
     user_id: Optional[int]  # 当前用户 ID（认证态注入，用于数据隔离）
     messages: List[Dict[str, str]]  # 对话历史
@@ -91,7 +104,7 @@ class AgentState(TypedDict):
     iteration: int  # 当前迭代次数
     retrieved_context: Optional[List[Dict]]  # RAG 检索结果
     final_answer: Optional[str]  # 最终回答
-    sources: Optional[List[str]]  # 来源引用
+    sources: Optional[List[SourceRecord]]  # 来源引用
     execution_log: List[Dict[str, Any]]  # 执行日志
 
 
@@ -118,6 +131,7 @@ def create_initial_state(
         初始化的 AgentState
     """
     return {
+        "run_id": uuid4().hex,
         "query": query,
         "user_id": user_id,
         "messages": messages if messages is not None else [],
